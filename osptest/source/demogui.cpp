@@ -50,7 +50,7 @@ fileFrame::fileFrame(QWidget*parent,u16 wfileNum,LPCSTR fileName)
         TBtn_GoOn->setArrowType(Qt::LeftArrow);
         TBtn_Cancel= new QToolButton(this);
         TBtn_Cancel->setGeometry(QRect(60, 30, 37, 18));
-        TBtn_Cancel->setText("Cancel");
+        TBtn_Cancel->setText("Suspended");
         TBtn_Remove = new QToolButton(this);
         TBtn_Remove->setGeometry(QRect(110, 30, 37, 18));
         TBtn_Remove->setText("Remove");
@@ -217,6 +217,9 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
 
         for(u16 i = 0;i < wFileNum;i++){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                        if(!tFileFrame[i]->isEnabled()){
+                                continue;
+                        }
                         tFileFrame[i]->setEnabled(false);
                         break;
                 }

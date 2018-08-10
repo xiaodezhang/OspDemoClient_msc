@@ -57,7 +57,7 @@ typedef struct tagFileList{
         u32                    FileSize;
 }TFileList;
 #else
-list<TFileList> tFileList;
+list<TFileList*> tFileList;
 #endif
 
 typedef struct tagDemoInfo{
@@ -379,17 +379,15 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
 #if _LINUX_
             list_add(&tnFile->tListHead,&tFileList);
 #else
-            strcpy((LPSTR)tnFile->FileName,(LPSTR)pMsg->content);
-            tnFile->DealInstance = ccIns->GetInsID();
-            tnFile->FileStatus = STATUS_UPLOAD_CMD;
-            tFileList.push_back(*tnFile);
+            tFileList.push_back(tnFile);
 #endif
+            strcpy((LPSTR)tnFile->FileName,(LPSTR)pMsg->content);
+
         }
 
         ccIns->m_curState = RUNNING_STATE;
-        strcpy((LPSTR)tnFile->FileName,(LPSTR)pMsg->content);
         tnFile->DealInstance = ccIns->GetInsID();
-        tnFile->FileStatus = STATUS_UPLOAD_CMD;
+        tnFile->FileStatus = STATUS_UPLOADING;
 
 post2gui:
         tGuiAck.wGuiAck = wGuiAck;
@@ -465,10 +463,8 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
         return;
    
 
-        postError2gui:
+postError2gui:
         CheckFileIn((LPCSTR)file_name_path,&tnFile);
-
-
         delete tnFile;
         NextState(IDLE_STATE);
 
@@ -562,6 +558,7 @@ postError2gui:
 
 
 #if _MSC_VER
+#if 0
         auto p = tFileList.begin();
         while(p != tFileList.end()){
                 if(strcmp((LPCSTR)p->FileName,(LPCSTR)file_name_path) == 0)
@@ -569,6 +566,10 @@ postError2gui:
 //                delete (char*)p;
                 break;
         }
+#endif
+        CheckFileIn((LPCSTR)file_name_path,&tnFile);
+        delete tnFile;
+
 #else
 
         CheckFileIn((LPCSTR)file_name_path,&tnFile);
@@ -777,19 +778,19 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                 }
         }
 #else
-        list<TFileList>::iterator iter = tFileList.begin();
-        while(tFileList.begin() != tFileList.end()){
+        list<TFileList*>::iterator iter = tFileList.begin();
+        while(iter != tFileList.end()){
 
-                pIns = (CCInstance*)((CApp*)&g_cCApp)->GetInstance(iter->DealInstance);
+                pIns = (CCInstance*)((CApp*)&g_cCApp)->GetInstance((*iter)->DealInstance);
                 if(!pIns){
                         OspLog(LOG_LVL_ERROR,"[SignOutAck]get error ins\n");
                         continue;
                 }
                 
-                if(iter->FileStatus == STATUS_UPLOADING){
-                        iter->FileStatus = STATUS_CANCELLED;
-                        iter->UploadFileSize = pIns->m_dwUploadFileSize;
-                        iter->FileSize = pIns->m_dwFileSize;
+                if((*iter)->FileStatus == STATUS_UPLOADING){
+                        (*iter)->FileStatus = STATUS_CANCELLED;
+                        (*iter)->UploadFileSize = pIns->m_dwUploadFileSize;
+                        (*iter)->FileSize = pIns->m_dwFileSize;
 
                         pIns->m_curState = IDLE_STATE;
                         if(pIns->file){
@@ -803,10 +804,10 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                         continue;
                 }
 
-                if(iter->FileStatus >= STATUS_CANCELLED)
+                if((*iter)->FileStatus >= STATUS_CANCELLED)
                         continue;
 
-                iter->FileStatus = STATUS_INIT;
+                (*iter)->FileStatus = STATUS_INIT;
                 pIns->m_curState = IDLE_STATE;
                 pIns->emFileStatus = STATUS_INIT;
                 if(pIns->file){
@@ -1098,6 +1099,7 @@ void CCInstance::RemoveCmd(CMessage* const pMsg){
     }
     ccIns->m_curState = RUNNING_STATE;
     tFile->FileStatus = STATUS_REMOVE_CMD;
+    tFile->DealInstance = ccIns->GetInsID();
     return;
 
 postError2gui:
@@ -1399,7 +1401,7 @@ void CCInstance::FileGoOnCmd(CMessage* const pMsg){
             goto postError2gui;
     }
     ccIns->m_curState = RUNNING_STATE;
-    tFile->FileStatus = STATUS_GO_ON_CMD;
+    tFile->FileStatus = STATUS_UPLOADING;
     tFile->DealInstance = ccIns->GetInsID();
 
 postError2gui:
@@ -1482,10 +1484,10 @@ static bool CheckFileIn(LPCSTR filename,TFileList **tFile){
 bool CheckFileIn(LPCSTR filename,TFileList **tFile){
 
         bool inFileList = false;
-        list<TFileList>::iterator iter = tFileList.begin();
+        list<TFileList*>::iterator iter = tFileList.begin();
 
         while(iter != tFileList.end()){
-                if(0 == strcmp((LPCSTR)iter->FileName,(LPCSTR)filename)){
+                if(0 == strcmp((LPCSTR)((*iter)->FileName),(LPCSTR)filename)){
                         inFileList = true;
                         break;
                 }
@@ -1493,7 +1495,7 @@ bool CheckFileIn(LPCSTR filename,TFileList **tFile){
         }
         if(tFile){
                 if(inFileList){
-                        *tFile = &*iter;
+                        *tFile = *iter;
                 }else{
                         *tFile = NULL;
                 }
