@@ -43,3 +43,7 @@ Thumbs.db
 *pyc
 *.swn
 *.swm
+ipch/*
+Win32/*
+OspDemoClient-Qt/GeneratedFiles/*
+
