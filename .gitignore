@@ -46,4 +46,5 @@ Thumbs.db
 ipch/*
 Win32/*
 OspDemoClient-Qt/GeneratedFiles/*
+OspDemoClient-Qt/Debug/*
 
