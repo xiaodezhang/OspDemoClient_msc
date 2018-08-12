@@ -92,6 +92,9 @@ demogui::demogui(QWidget *parent)
         LB_SignState->setGeometry(QRect(230,10,113,20));
         LB_SignState->setText("UnSigned");
         qFileDialog = new QFileDialog(this);
+        qFileDialog->setFileMode(QFileDialog::ExistingFiles);
+        qFileDialog->setViewMode(QFileDialog::List);
+
         ui.setupUi(this);
         ui.verticalScrollBar->hide();
         connect(ui.Btn_SignIn,SIGNAL(clicked()),this,SLOT(SignIn()));
@@ -108,12 +111,8 @@ demogui::demogui(QWidget *parent)
         connect(ins,SIGNAL(FileCancelAck(TGuiAck*)),this,SLOT(FileCancelShow(TGuiAck*)));
         connect(ins,SIGNAL(FileGoOnAck(TGuiAck*)),this,SLOT(FileGoOnShow(TGuiAck*)));
         connect(ins,SIGNAL(FileRemoveAck(TGuiAck*)),this,SLOT(FileRemoveShow(TGuiAck*)));
-#if 0
-        connect(ui.verticalScrollBar,SIGNAL(sliderPressed()),this,SLOT(S_SliderMoved()));
-        connect(ui.verticalScrollBar,SIGNAL(valueChanged()),this,SLOT(S_SliderMoved()));
-        connect(ui.verticalScrollBar,SIGNAL(rangeChanged()),this,SLOT(S_SliderMoved()));
-#endif
 }
+
 void demogui::SignInShow(){
         LB_SignState->setText("Signed");
         ui.TE_ACKShow->append(QString("Sign In"));
@@ -134,6 +133,8 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
               return;
         }
+        OspLog(SYS_LOG_LEVEL,"FileSizeShow:%s\n",tGuiAck->FileName);
+
         tFileFrame[wFileNum] = new fileFrame(this,wFileNum,(LPCSTR)tGuiAck->FileName);
         if(!tFileFrame[wFileNum]){
               sprintf(mes,"file upload error:%d",tGuiAck->wGuiAck);
@@ -147,15 +148,16 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
         connect(tFileFrame[wFileNum]->TBtn_Remove,SIGNAL(clicked()),tFileFrame[wFileNum]
                         ,SLOT(FileRemove()));
         tFileFrame[wFileNum]->show();
-        if(80*wFileNum > ui.frame->height()){
+        if(80*(wFileNum+1) > ui.frame->height()){
                 ui.verticalScrollBar->show();
-                ui.verticalScrollBar->setMaximum(wFileNum*80-400);
+                ui.verticalScrollBar->setMaximum((wFileNum+1)*80-400);
                 ui.verticalScrollBar->setMinimum(0);
         }
 
         tFileFrame[wFileNum]->Pb_FileSize->setMaximum(tGuiAck->dwFileSize);
         tFileFrame[wFileNum]->Pb_FileSize->setMinimum(0);
         wFileNum++;
+        delete tGuiAck;
 #if 0
         for(u16 i = 0;i < wFileNum;i++){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
@@ -214,6 +216,12 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
 
         u8 mes[MAX_MESSAGE_LENGTH];
         LPSTR p;
+
+        if(tGuiAck->wGuiAck != 0){
+              sprintf((LPSTR)mes,"file Remove error:%d",tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              return;
+        }
 
         for(u16 i = 0;i < wFileNum;i++){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
@@ -300,9 +308,10 @@ void demoCInstance::GetSignOut(CMessage* const pMsg){
 
 void demoCInstance::GetFileSize(CMessage* const pMsg){
 
-        TGuiAck *tGuiAck;
-        tGuiAck = (TGuiAck*)pMsg->content;
+        TGuiAck* tGuiAck;
 
+        tGuiAck = new TGuiAck();
+        memcpy(tGuiAck,pMsg->content,pMsg->length);
         emit FileSizeAck(tGuiAck);
 }
 
@@ -389,6 +398,7 @@ void demogui::FileUpload(){
                        OspLog(LOG_LVL_ERROR,"[FileUpload] post error\n");
 					   return;
                 }
+                OspLog(SYS_LOG_LEVEL,"fileUpload:%s\n",wFileName);
 
 #if 0
                 tFileFrame[i+wFileNum] = new fileFrame(this,wFileNum,(LPCSTR)wFileName);
@@ -430,8 +440,6 @@ void demogui::S_SliderMoved(int value){
 }
 
 void demogui::FileDialogShow(){
-        qFileDialog->setFileMode(QFileDialog::AnyFile);
-        qFileDialog->setViewMode(QFileDialog::Detail);
 
         qFileDialog->exec();
        // qFileDialog->show();

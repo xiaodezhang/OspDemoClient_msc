@@ -349,6 +349,7 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
                 goto post2gui;
         }
 
+        OspLog(LOG_LVL_ERROR,"[FileUploadCmd] file :%s\n",pMsg->content);
 
         if(CheckFileIn((LPCSTR)pMsg->content,&tnFile) && STATUS_FINISHED != tnFile->FileStatus
                         && STATUS_REMOVED != tnFile->FileStatus){
@@ -392,9 +393,10 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
 post2gui:
         tGuiAck.wGuiAck = wGuiAck;
         strcpy((LPSTR)tGuiAck.FileName,(LPCSTR)pMsg->content);
+
         if(OSP_OK != post(MAKEIID(GUI_APP_ID,DAEMON),GUI_FILE_UPLOAD_ACK
                ,&tGuiAck,sizeof(tGuiAck),g_dwGuiNode)){
-                OspLog(LOG_LVL_ERROR,"[SignOutAck]post error\n");
+                OspLog(LOG_LVL_ERROR,"[FileUploadCmd]post error\n");
         }
         return;
 }
@@ -420,6 +422,8 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
         wGuiAck = 0;
         m_dwUploadFileSize = 0;
         strcpy((LPSTR)file_name_path,(LPCSTR)pMsg->content);
+        strcpy((LPSTR)tGuiAck.FileName,(LPCSTR)pMsg->content);
+        OspLog(LOG_LVL_ERROR,"[FileUploadCmdDeal] file :%s\n",file_name_path);
         
         if(!(file = fopen((LPCSTR)file_name_path,"rb"))){
 		
@@ -469,7 +473,6 @@ postError2gui:
         NextState(IDLE_STATE);
 
         tGuiAck.wGuiAck = wGuiAck;
-        strcpy((LPSTR)tGuiAck.FileName,(LPCSTR)pMsg->content);
         if(OSP_OK != post(MAKEIID(GUI_APP_ID,DAEMON),GUI_FILE_UPLOAD_ACK
                ,&tGuiAck,sizeof(tGuiAck),g_dwGuiNode)){
                 OspLog(LOG_LVL_ERROR,"[FileUploadCmdDeal]post error\n");
@@ -1476,7 +1479,11 @@ static bool CheckFileIn(LPCSTR filename,TFileList **tFile){
                 }
         }
         if(tFile){
-                *tFile = tnFile;
+                if(inFileList){
+                    *tFile = tnFile;
+                }else{
+                    *tFile = NULL;
+                }
         }
         return inFileList;
 }
