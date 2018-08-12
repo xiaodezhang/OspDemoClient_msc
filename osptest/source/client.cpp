@@ -7,6 +7,7 @@
 #else
 #include<list>
 #endif
+#include"zlib.h"
 
 #define CLIENT_APP_SUM           5
 #define APP_NUM_SIZE             20
@@ -31,6 +32,8 @@ API void SendCancelCmd();
 API void SendRemoveCmd();
 API void SendFileGoOnCmd();
 API void Disconnect2Server();
+
+API int def(FILE *source, FILE *dest, int level);
 
 static void UploadCmdSingle(const s8*);
 
@@ -328,6 +331,9 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
 
         CCInstance *ccIns;
         TFileList *tnFile = NULL;
+        FILE * zFile,*zFileTemp;
+        char tempFileName[MAX_FILE_NAME_LENGTH];
+
 
         wGuiAck = 0;
 
@@ -349,14 +355,36 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
                 goto post2gui;
         }
 
-        OspLog(LOG_LVL_ERROR,"[FileUploadCmd] file :%s\n",pMsg->content);
+#if 1
+        strcpy(tempFileName,(LPCSTR)pMsg->content);
+        strcat(tempFileName,"_temp");
+        if(!(zFile = fopen((LPCSTR)pMsg->content,"rb"))){
+                 OspLog(LOG_LVL_ERROR,"[FileUploadCmd] open zfile error\n");
+                 wGuiAck = -30;
+                 goto post2gui;
+        }
+
+       if(!(zFileTemp = fopen((LPCSTR)tempFileName,"wb"))){
+                 OspLog(LOG_LVL_ERROR,"[FileUploadCmd]open zfiletemp:%s error\n",tempFileName);
+                 wGuiAck = -31;
+                 goto post2gui;
+        }
+        if((def(zFile,zFileTemp,Z_DEFAULT_COMPRESSION)) != Z_OK){
+                 OspLog(LOG_LVL_ERROR,"[FileUploadCmd] def error\n");
+                 wGuiAck = -32;
+                         //TODO:
+                 goto post2gui;
+        }
+        fclose(zFile);
+        fclose(zFileTemp);
+#endif
 
         if(CheckFileIn((LPCSTR)pMsg->content,&tnFile) && STATUS_FINISHED != tnFile->FileStatus
                         && STATUS_REMOVED != tnFile->FileStatus){
                 OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
                 wGuiAck = -12;
                 goto post2gui;
-        }
+       }
 
         if(!(ccIns = GetPendingIns())){
                 OspLog(SYS_LOG_LEVEL, "[FileUploadCmd]no pending instance,please wait...\n");
