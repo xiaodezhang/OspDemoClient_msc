@@ -34,6 +34,8 @@ API void SendFileGoOnCmd();
 API void Disconnect2Server();
 
 API int def(FILE *source, FILE *dest, int level);
+API extern int File2Sha1(const char*,char*);
+
 
 static void UploadCmdSingle(const s8*);
 
@@ -329,10 +331,50 @@ API void MultSendFileUploadCmd(){
 
 void CCInstance::FileUploadCmd(CMessage*const pMsg){
 
+        char sha1Buffer[41];
+
+        if(!g_bSignFlag){
+                OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]did not sign in\n");
+                return;
+        }
+
+        if(!pMsg->content || pMsg->length <= 0){
+                 OspLog(LOG_LVL_ERROR,"[FileUploadCmd] pMsg is NULL\n");
+                 return;
+        }
+
+        if(pMsg->length > MAX_FILE_NAME_LENGTH){
+                OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
+                wGuiAck = -10;
+                goto post2gui;
+        }
+
+
+        if(File2Sha1((const char*)pMsg->content,sha1Buffer) != 0){
+                OspLog(LOG_LVL_ERROR,"[FileUploadCmd]file:%s sha1 error\n",pMsg->content);
+                wGuiAck = -11;
+                goto post2gui;
+        }else{
+                OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file:%s sha1:%s\n",pMsg->content,sha1Buffer);
+        }
+
+        if(OSP_OK != post(MAKEIID(SERVER_APP_ID,CInstance::DAEMON),FILE_SHA1
+                       ,sha1Buffer,41*sizeof(char),g_dwdstNode)){
+                OspLog(LOG_LVL_ERROR,"[FileUploadCmdDeal] post error\n");
+                return;
+        }
+
+
+}
+#if 0
+void CCInstance::FileUploadCmd(CMessage*const pMsg){
+
         CCInstance *ccIns;
         TFileList *tnFile = NULL;
         FILE * zFile,*zFileTemp;
         char tempFileName[MAX_FILE_NAME_LENGTH];
+        char sha1Buffer[41];
+
 
 
         wGuiAck = 0;
@@ -351,11 +393,21 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
 
         if(pMsg->length > MAX_FILE_NAME_LENGTH){
                 OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
-                wGuiAck = -11;
+                wGuiAck = -10;
                 goto post2gui;
         }
 
-#if 1
+
+        if(File2Sha1((const char*)pMsg->content,sha1Buffer) != 0){
+                OspLog(LOG_LVL_ERROR,"[FileUploadCmd]file:%s sha1 error\n",pMsg->content);
+                wGuiAck = -11;
+                goto post2gui;
+        }else{
+                OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file:%s sha1:%s\n",pMsg->content,sha1Buffer);
+        }
+
+#if 0
+
         strcpy(tempFileName,(LPCSTR)pMsg->content);
         strcat(tempFileName,"_temp");
         if(!(zFile = fopen((LPCSTR)pMsg->content,"rb"))){
@@ -428,6 +480,7 @@ post2gui:
         }
         return;
 }
+#endif
 
 void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
 

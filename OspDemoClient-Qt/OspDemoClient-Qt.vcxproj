@@ -42,7 +42,7 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">E:\workstation\OspDemoClient-Qt _2\common\lib\debug\win32_2010;E:\workstation\OspDemoClient-Qt\common\lib\debug\win32_2010;$(LibraryPath)</LibraryPath>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">E:\workstation\OspDemoClient-Qt _2\common\lib\debug\win32_2010;E:\workstation\OspDemoClient-Qt _2\common\include;E:\workstation\OspDemoClient-Qt _2\osptest\include;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">E:\workstation\OspDemoClient-Qt _2\osptest\lib;E:\workstation\OspDemoClient-Qt _2\common\lib\debug\win32_2010;E:\workstation\OspDemoClient-Qt _2\common\include;E:\workstation\OspDemoClient-Qt _2\osptest\include;$(IncludePath)</IncludePath>
     <ReferencePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">E:\workstation\OspDemoClient-Qt _2\common\lib\debug\win32_2010;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -80,6 +80,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\osptest\lib\file2sha1.c" />
+    <ClCompile Include="..\osptest\lib\sha1.c" />
+    <ClCompile Include="..\osptest\lib\ubc_check.c" />
     <ClCompile Include="..\osptest\source\client.cpp" />
     <ClCompile Include="..\osptest\source\demogui.cpp" />
     <ClCompile Include="..\osptest\source\main.cpp" />

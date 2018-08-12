@@ -73,6 +73,8 @@
 #define FILE_GO_ON_CMD_DEAL            (EV_CLIENT_TEST_BGN+40)
 #define SEND_REMOVE_CMD_DEAL           (EV_CLIENT_TEST_BGN+41)
 #define SEND_STABLE_REMOVE_CMD_DEAL    (EV_CLIENT_TEST_BGN+42)
+#define FILE_SHA1                      (EV_CLIENT_TEST_BGN+44)
+
 
 
 #define MAKEESTATE(state,event) ((u32)((event) << 4 + (state)))
