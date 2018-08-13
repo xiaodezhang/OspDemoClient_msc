@@ -74,6 +74,7 @@
 #define SEND_REMOVE_CMD_DEAL           (EV_CLIENT_TEST_BGN+41)
 #define SEND_STABLE_REMOVE_CMD_DEAL    (EV_CLIENT_TEST_BGN+42)
 #define FILE_SHA1                      (EV_CLIENT_TEST_BGN+44)
+#define FILE_SHA1_ACK                  (EV_CLIENT_TEST_BGN+45)
 
 
 
@@ -144,8 +145,9 @@ private:
         void DaemonInstanceEntry(CMessage *const,CApp*);
         tCmdNode *m_tCmdChain;
         tCmdNode *m_tCmdDaemonChain;
-        FILE *file;
+        
 public:
+	    FILE *file;
         CCInstance(): m_dwDisInsID(0) 
 			         ,file(NULL)
 					 ,m_dwFileSize(0)
@@ -196,6 +198,8 @@ public:
         void FileGoOnCmdDeal(CMessage* const);
         void RemoveCmdDeal(CMessage* const);
         void StableRemoveCmdDeal(CMessage* const);
+        void FileSha1Ack(CMessage* const);
+ 
 
 #if MULTY_APP
         void GetDisconnect(CMessage* const);
@@ -206,7 +210,6 @@ public:
         void GetDissigned(CMessage* const);
         void GetSigned(CMessage* const);
 #endif
-        //断链检测处理函数
         void notifyDisconnect(CMessage* const);
 
 
