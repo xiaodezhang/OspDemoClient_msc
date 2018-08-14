@@ -86,8 +86,7 @@ void fileFrame::FileRemove(){
 
 demogui::demogui(QWidget *parent)
 	: QWidget(parent)
-    ,wFileFrameBegin(0)
-    ,wFileFrameEnd(0)
+    ,wFileNum(0)
 {
         LB_SignState = new QLabel(this);
         LB_SignState->setGeometry(QRect(230,10,113,20));
@@ -150,6 +149,30 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
               return;
         }
+
+        tFileFrame[wFileNum] = new fileFrame(this,wFileNum,(LPCSTR)tGuiAck->FileName);
+        if(!tFileFrame[wFileNum]){
+              sprintf(mes,"file upload error:%d",tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              return;
+        }
+        connect(tFileFrame[wFileNum]->TBtn_Cancel,SIGNAL(clicked()),tFileFrame[wFileNum]
+                        ,SLOT(FileCancel()));
+        connect(tFileFrame[wFileNum]->TBtn_GoOn,SIGNAL(clicked()),tFileFrame[wFileNum]
+                        ,SLOT(FileGoOn()));
+        connect(tFileFrame[wFileNum]->TBtn_Remove,SIGNAL(clicked()),tFileFrame[wFileNum]
+                        ,SLOT(FileRemove()));
+        tFileFrame[wFileNum]->show();
+        if(80*(wFileNum+1) > ui.frame->height()){
+                ui.verticalScrollBar->show();
+                ui.verticalScrollBar->setMaximum((wFileNum+1)*80-400);
+                ui.verticalScrollBar->setMinimum(0);
+        }
+
+        tFileFrame[wFileNum]->Pb_FileSize->setMaximum(tGuiAck->dwFileSize);
+        tFileFrame[wFileNum]->Pb_FileSize->setMinimum(0);
+        wFileNum++;
+
 }
 
 void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
@@ -162,7 +185,7 @@ void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
               return;
         }
 
-        for(u16 i = wFileFrameBegin;i < wFileFrameEnd;i++){
+        for(u16 i = 0;i < wFileNum;i++){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
                         if(!tFileFrame[i]->isEnabled()){
                                 continue;
@@ -230,10 +253,9 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
               return;
         }
 
-        for(u16 i = wFileFrameBegin;i < wFileFrameEnd;i++){
+        for(u16 i = 0;i < wFileNum;i++){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
-//                        tFileFrame[i]->setEnabled(false);
-                        wFileFrameBegin++;
+                        tFileFrame[i]->setEnabled(false);
                         tFileFrame[i]->close();
                         findFrame = true;
                         continue;
@@ -281,34 +303,10 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
         char mes[MAX_MESSAGE_LENGTH];
 
         if(tGuiAck->wGuiAck != 0){
-              sprintf((LPSTR)mes,"file Upload error:%d",tGuiAck->wGuiAck);
+              sprintf((LPSTR)mes,"file:%s Upload error:%d",tGuiAck->FileName,tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
               return;
         }
-
-        tFileFrame[wFileFrameEnd] = new fileFrame(this,wFileFrameEnd-wFileFrameBegin,(LPCSTR)tGuiAck->FileName);
-        if(!tFileFrame[wFileFrameEnd]){
-              sprintf(mes,"file upload error:%d",tGuiAck->wGuiAck);
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
-              return;
-        }
-        connect(tFileFrame[wFileFrameEnd]->TBtn_Cancel,SIGNAL(clicked()),tFileFrame[wFileFrameEnd]
-                        ,SLOT(FileCancel()));
-        connect(tFileFrame[wFileFrameEnd]->TBtn_GoOn,SIGNAL(clicked()),tFileFrame[wFileFrameEnd]
-                        ,SLOT(FileGoOn()));
-        connect(tFileFrame[wFileFrameEnd]->TBtn_Remove,SIGNAL(clicked()),tFileFrame[wFileFrameEnd]
-                        ,SLOT(FileRemove()));
-        tFileFrame[wFileFrameEnd]->show();
-        if(80*(wFileFrameEnd-wFileFrameBegin+1) > ui.frame->height()){
-                ui.verticalScrollBar->show();
-                ui.verticalScrollBar->setMaximum((wFileFrameEnd-wFileFrameBegin+1)*80-400);
-                ui.verticalScrollBar->setMinimum(0);
-        }
-
-        tFileFrame[wFileFrameEnd]->Pb_FileSize->setMaximum(tGuiAck->dwFileSize);
-        tFileFrame[wFileFrameEnd]->Pb_FileSize->setMinimum(0);
-        wFileFrameEnd++;
-
 }
 
 demoCInstance::demoCInstance(QObject* parent)
@@ -373,8 +371,10 @@ void demoCInstance::GetDisconnect(CMessage* const pMsg){
 }
 
 void demoCInstance::GetFileUpload(CMessage* const pMsg){
-        TGuiAck *tGuiAck;
-        tGuiAck = (TGuiAck*)pMsg->content;
+        TGuiAck* tGuiAck;
+
+        tGuiAck = new TGuiAck();
+        memcpy(tGuiAck,pMsg->content,pMsg->length);
         emit FileUploadAck(tGuiAck);
 }
 
@@ -455,7 +455,7 @@ void demogui::S_SliderMoved(int value){
 
      QPoint point; 
 #if 1
-        for(int i = wFileFrameBegin;i < wFileFrameEnd;i++){
+        for(int i = 0;i < wFileNum;i++){
                 point = tFileFrame[i]->pos();
                 tFileFrame[i]->move(0,i*80-nowvalue);
         }

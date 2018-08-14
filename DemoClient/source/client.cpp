@@ -473,7 +473,7 @@ postError2gui:
         while(iter != tFileList.end()){
                 if(strcmp((LPCSTR)(*iter)->FileName,(LPCSTR)file_name_path) == 0){
                         tFileList.erase(iter);
-                        delete (*iter);
+        //                delete iter;
                         break;
                 }
                 iter++;
@@ -579,7 +579,7 @@ postError2gui:
         while(iter != tFileList.end()){
                 if(strcmp((LPCSTR)(*iter)->FileName,(LPCSTR)file_name_path) == 0){
                         tFileList.erase(iter);
-                        delete (*iter);
+                        //delete iter;
                         break;
                 }
                 iter++;
@@ -599,7 +599,7 @@ postError2gui:
         strcpy((LPSTR)tGuiAck.FileName,(LPCSTR)file_name_path);
         if(OSP_OK != post(MAKEIID(GUI_APP_ID,DAEMON),GUI_FILE_UPLOAD_ACK
                ,&tGuiAck,sizeof(tGuiAck),g_dwGuiNode)){
-                OspLog(LOG_LVL_ERROR,"[FileUploadCmdDeal]post error\n");
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]post error\n");
         }
         return;
 }

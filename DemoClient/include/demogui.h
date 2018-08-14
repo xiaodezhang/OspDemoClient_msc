@@ -80,8 +80,7 @@ public:
         void GetFileGoOn(CMessage*const);
 private:
         void createFileFrame(LPCSTR);
-        u16  wFileFrameBegin;
-        u16  wFileFrameEnd;
+        u16  wFileNum;
 
 public slots:
         void SignIn();
