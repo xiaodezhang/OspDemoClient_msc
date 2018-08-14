@@ -80,7 +80,8 @@ public:
         void GetFileGoOn(CMessage*const);
 private:
         void createFileFrame(LPCSTR);
-        u16  wFileNum;
+        u16  wFileFrameBegin;
+        u16  wFileFrameEnd;
 
 public slots:
         void SignIn();
@@ -157,7 +158,6 @@ signals:
        void FileRemoveAck(TGuiAck*);
 
 private:
-        u16  wFileNum;
         u32 dwFileSize;
 private: 
         tCmdNode *m_tCmdChain;
