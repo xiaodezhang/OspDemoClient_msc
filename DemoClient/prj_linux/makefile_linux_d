@@ -1,0 +1,53 @@
+###
+### Copyright (c) 2004 Keda Telecom, Inc.
+###
+
+#########################################################################
+###
+###  DESCRIPTION:
+###    Common definitions for all Makefiles in OSP linux project.
+###
+#########################################################################
+
+TOP := ..
+
+COMM_DIR := ./
+
+SRC_DIR := $(TOP)/source
+
+CURDIR := ./
+
+## Name and type of the target for this Makefile
+
+APP_TARGET      := client.linux
+
+## Define debugging symbols
+DEBUG = 0
+LINUX_COMPILER= _REDHAT_
+PWLIB_SUPPORT = 0
+
+## Object files that compose the target(s)
+CFLAGS += -m32
+LDFLAGS += -m32
+
+OBJS := $(SRC_DIR)/client $(SRC_DIR)/demogui
+
+## Libraries to include in shared object file
+
+LIBS := osp rt pthread
+
+LIB_PATH = $(CURDIR)/../../common/lib/debug/linux
+
+## Add driver-specific include directory to the search path
+
+INC_PATH += $(CURDIR) $(CURDIR)/../include \
+	        $(CURDIR)/../../common/include
+
+ifeq ($(PWLIB_SUPPORT),1)
+   INC_PATH += $(PWLIBDIR)/include/ptlib/unix $(PWLIBDIR)/include
+endif
+
+INSTALL_APP_PATH = $(CURDIR)
+
+include $(COMM_DIR)/common.mk
+
