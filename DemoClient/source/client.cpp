@@ -468,8 +468,22 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
    
 
 postError2gui:
+#if _MSC_VER
+        auto iter = tFileList.begin();
+        while(iter != tFileList.end()){
+                if(strcmp((LPCSTR)(*iter)->FileName,(LPCSTR)file_name_path) == 0){
+                        tFileList.erase(iter);
+                        delete (*iter);
+                        break;
+                }
+                iter++;
+        }
+
+#else
         CheckFileIn((LPCSTR)file_name_path,&tnFile);
+        list_del(tnFile->tListHead);
         delete tnFile;
+#endif
         NextState(IDLE_STATE);
 
         tGuiAck.wGuiAck = wGuiAck;
@@ -561,21 +575,19 @@ postError2gui:
 
 
 #if _MSC_VER
-#if 0
-        auto p = tFileList.begin();
-        while(p != tFileList.end()){
-                if(strcmp((LPCSTR)p->FileName,(LPCSTR)file_name_path) == 0)
-                tFileList.erase(p);
-//                delete (char*)p;
-                break;
+        auto iter = tFileList.begin();
+        while(iter != tFileList.end()){
+                if(strcmp((LPCSTR)(*iter)->FileName,(LPCSTR)file_name_path) == 0){
+                        tFileList.erase(iter);
+                        delete (*iter);
+                        break;
+                }
+                iter++;
         }
-#endif
-        CheckFileIn((LPCSTR)file_name_path,&tnFile);
-        delete tnFile;
 
 #else
-
         CheckFileIn((LPCSTR)file_name_path,&tnFile);
+        list_del(tnFile->tListHead);
         delete tnFile;
 #endif
 
