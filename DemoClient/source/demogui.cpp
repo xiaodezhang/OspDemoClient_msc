@@ -177,6 +177,14 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
 
 void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
 
+        char mes[MAX_MESSAGE_LENGTH];
+
+        if(tGuiAck->wGuiAck != 0){
+              sprintf(mes,"file upload error:%d",tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              return;
+        }
+
         for(u16 i = wFileFrameBegin;i < wFileFrameEnd;i++){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
                         if(!tFileFrame[i]->isEnabled()){
@@ -190,8 +198,14 @@ void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
 
 void demogui::FileFinishShow(TGuiAck* tGuiAck){
 
-        u8 mes[MAX_MESSAGE_LENGTH];
+        char mes[MAX_MESSAGE_LENGTH];
         LPSTR p;
+
+        if(tGuiAck->wGuiAck != 0){
+              sprintf(mes,"file finish error:%d",tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              return;
+        }
 
         if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
@@ -205,8 +219,15 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
 
 void demogui::FileCancelShow(TGuiAck* tGuiAck){
 
-        u8 mes[MAX_MESSAGE_LENGTH];
+        char mes[MAX_MESSAGE_LENGTH];
         LPSTR p;
+
+        if(tGuiAck->wGuiAck != 0){
+              sprintf(mes,"file cancel error:%d",tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              return;
+        }
+
 
         if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
@@ -259,8 +280,14 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
 
 void demogui::FileGoOnShow(TGuiAck* tGuiAck){
 
-        u8 mes[MAX_MESSAGE_LENGTH];
+        char mes[MAX_MESSAGE_LENGTH];
         LPSTR p;
+
+        if(tGuiAck->wGuiAck != 0){
+              sprintf((LPSTR)mes,"file Remove error:%d",tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              return;
+        }
 
         if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
@@ -274,8 +301,12 @@ void demogui::FileGoOnShow(TGuiAck* tGuiAck){
 
 void demogui::FileUploadShow(TGuiAck* tGuiAck){
 
+        char mes[MAX_MESSAGE_LENGTH];
+
         if(tGuiAck->wGuiAck != 0){
-             ui.TE_ACKShow->append(QString::number(tGuiAck->wGuiAck));
+              sprintf((LPSTR)mes,"file Remove error:%d",tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              return;
         }
 }
 
