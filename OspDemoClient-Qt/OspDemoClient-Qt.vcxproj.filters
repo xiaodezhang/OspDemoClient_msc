@@ -53,6 +53,18 @@
     <ClCompile Include="GeneratedFiles\Debug\moc_demogui.cpp">
       <Filter>Generated Files\Debug</Filter>
     </ClCompile>
+    <ClCompile Include="..\osptest\source\zpipe.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\osptest\lib\file2sha1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\osptest\lib\sha1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\osptest\lib\ubc_check.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="demogui.ui">
@@ -79,6 +91,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\osptest\include\client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\include\zlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

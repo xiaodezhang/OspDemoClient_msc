@@ -151,6 +151,7 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
         if(80*(wFileNum+1) > ui.frame->height()){
                 ui.verticalScrollBar->show();
                 ui.verticalScrollBar->setMaximum((wFileNum+1)*80-400);
+                ui.verticalScrollBar->setValue((wFileNum+1)*80-400);
                 ui.verticalScrollBar->setMinimum(0);
         }
 
