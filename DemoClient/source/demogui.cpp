@@ -151,6 +151,7 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
         if(80*(wFileNum+1) > ui.frame->height()){
                 ui.verticalScrollBar->show();
                 ui.verticalScrollBar->setMaximum((wFileNum+1)*80-400);
+                ui.verticalScrollBar->setValue((wFileNum+1)*80-400);
                 ui.verticalScrollBar->setMinimum(0);
         }
 
@@ -503,7 +504,7 @@ int myOspInit(){
                 OspLog(LOG_LVL_ERROR,"[myOspInit]get instance failed\n");
                 return -5;
         }
-      
+        //尝试多次建立node，支持本地多个客户端的副本
         for(i = 0;i < CREATE_TCP_NODE_TIMES;i++){
                 if(INVALID_SOCKET != (ret = OspCreateTcpNode(0,DEMO_GUI_LISTEN_PORT+i*3))){
                         bCreateTcpNodeFlag = true;
