@@ -1419,6 +1419,7 @@ void CCInstance::FileGoOnCmd(CMessage* const pMsg){
     tFile->FileStatus = STATUS_UPLOADING;
     tFile->DealInstance = ccIns->GetInsID();
 
+    return;
 postError2gui:
 
         tGuiAck.wGuiAck = wGuiAck;
@@ -1462,7 +1463,6 @@ void CCInstance::FileGoOnCmdDeal(CMessage* const pMsg){
                 OspLog(LOG_LVL_ERROR,"[FileGoOnCmdDeal] post error\n");
                 return;
         }
-
 
 postError2gui:
         tGuiAck.wGuiAck = wGuiAck;

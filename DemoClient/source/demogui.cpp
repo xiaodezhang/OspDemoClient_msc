@@ -147,6 +147,7 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
         if(tGuiAck->wGuiAck != 0){
               sprintf(mes,"file upload error:%d",tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
 
@@ -154,6 +155,7 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
         if(!tFileFrame[wFileNum]){
               sprintf(mes,"file upload error:%d",tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
         connect(tFileFrame[wFileNum]->TBtn_Cancel,SIGNAL(clicked()),tFileFrame[wFileNum]
@@ -167,11 +169,13 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
                 ui.verticalScrollBar->show();
                 ui.verticalScrollBar->setMaximum((wFileNum+1)*80-400);
                 ui.verticalScrollBar->setMinimum(0);
+                ui.verticalScrollBar->setValue(0);
         }
 
         tFileFrame[wFileNum]->Pb_FileSize->setMaximum(tGuiAck->dwFileSize);
         tFileFrame[wFileNum]->Pb_FileSize->setMinimum(0);
         wFileNum++;
+        delete tGuiAck;
 
 }
 
@@ -182,6 +186,7 @@ void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
         if(tGuiAck->wGuiAck != 0){
               sprintf(mes,"file upload error:%d",tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
 
@@ -194,6 +199,7 @@ void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
                         break;
                 }
         }
+        delete tGuiAck;
 }
 
 void demogui::FileFinishShow(TGuiAck* tGuiAck){
@@ -204,6 +210,7 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
         if(tGuiAck->wGuiAck != 0){
               sprintf(mes,"file finish error:%d",tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
 
@@ -215,6 +222,7 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
 
         strcat((LPSTR)mes," upload finished");
         ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        delete tGuiAck;
 }
 
 void demogui::FileCancelShow(TGuiAck* tGuiAck){
@@ -225,6 +233,7 @@ void demogui::FileCancelShow(TGuiAck* tGuiAck){
         if(tGuiAck->wGuiAck != 0){
               sprintf(mes,"file cancel error:%d",tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
 
@@ -237,6 +246,7 @@ void demogui::FileCancelShow(TGuiAck* tGuiAck){
 
         strcat((LPSTR)mes," suspended");
         ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        delete tGuiAck;
 }
 
 void demogui::FileRemoveShow(TGuiAck* tGuiAck){
@@ -250,6 +260,7 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
         if(tGuiAck->wGuiAck != 0){
               sprintf((LPSTR)mes,"file Remove error:%d",tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
 
@@ -275,6 +286,7 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
 
         strcat((LPSTR)mes," Removed");
         ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        delete tGuiAck;
 }
 
 void demogui::FileGoOnShow(TGuiAck* tGuiAck){
@@ -285,6 +297,7 @@ void demogui::FileGoOnShow(TGuiAck* tGuiAck){
         if(tGuiAck->wGuiAck != 0){
               sprintf((LPSTR)mes,"file GoOn error:%d",tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
 
@@ -296,15 +309,25 @@ void demogui::FileGoOnShow(TGuiAck* tGuiAck){
 
         strcat((LPSTR)mes," go on uploading");
         ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        delete tGuiAck;
+
 }
 
 void demogui::FileUploadShow(TGuiAck* tGuiAck){
 
+        LPSTR p;
         char mes[MAX_MESSAGE_LENGTH];
 
+        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
+                strcpy((LPSTR)mes,p+1);
+        }else{
+                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+        }
+
         if(tGuiAck->wGuiAck != 0){
-              sprintf((LPSTR)mes,"file:%s Upload error:%d",tGuiAck->FileName,tGuiAck->wGuiAck);
+              sprintf((LPSTR)mes,"file:%s upload error:%d",tGuiAck->FileName,tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
               return;
         }
 }
@@ -336,7 +359,9 @@ void demoCInstance::MsgProcessInit(){
 
 void demoCInstance::GetSignIn(CMessage* const pMsg){
         
+        //TODO:error deal
         u16 ack = *(s16*)pMsg->content;
+
         if(ack == 0){
               emit SignInAck();
         }
@@ -357,12 +382,16 @@ void demoCInstance::GetFileSize(CMessage* const pMsg){
 
         tGuiAck = new TGuiAck();
         memcpy(tGuiAck,pMsg->content,pMsg->length);
+
         emit FileSizeAck(tGuiAck);
 }
 
 void demoCInstance::GetUploadFileSize(CMessage* const pMsg){
-        TGuiAck *tGuiAck;
-        tGuiAck = (TGuiAck*)pMsg->content;
+
+        TGuiAck* tGuiAck;
+
+        tGuiAck = new TGuiAck();
+        memcpy(tGuiAck,pMsg->content,pMsg->length);
 
         emit UploadFileSizeAck(tGuiAck);
 }
@@ -371,31 +400,53 @@ void demoCInstance::GetDisconnect(CMessage* const pMsg){
 }
 
 void demoCInstance::GetFileUpload(CMessage* const pMsg){
+
         TGuiAck* tGuiAck;
 
         tGuiAck = new TGuiAck();
         memcpy(tGuiAck,pMsg->content,pMsg->length);
+
         emit FileUploadAck(tGuiAck);
 }
 
 void demoCInstance::GetFileFinished(CMessage* const pMsg){
 
-        emit FileFinishAck((TGuiAck*)pMsg->content);
+        TGuiAck* tGuiAck;
+
+        tGuiAck = new TGuiAck();
+        memcpy(tGuiAck,pMsg->content,pMsg->length);
+
+        emit FileFinishAck(tGuiAck);
 }
 
 void demoCInstance::GetFileCancel(CMessage* const pMsg){
 
-        emit FileCancelAck((TGuiAck*)pMsg->content);
+        TGuiAck* tGuiAck;
+
+        tGuiAck = new TGuiAck();
+        memcpy(tGuiAck,pMsg->content,pMsg->length);
+
+        emit FileCancelAck(tGuiAck);
 }
 
 void demoCInstance::GetFileRemove(CMessage* const pMsg){
 
-        emit FileRemoveAck((TGuiAck*)pMsg->content);
+        TGuiAck* tGuiAck;
+
+        tGuiAck = new TGuiAck();
+        memcpy(tGuiAck,pMsg->content,pMsg->length);
+
+        emit FileRemoveAck(tGuiAck);
 }
 
 void demoCInstance::GetFileGoOn(CMessage* const pMsg){
 
-        emit FileGoOnAck((TGuiAck*)pMsg->content);
+        TGuiAck* tGuiAck;
+
+        tGuiAck = new TGuiAck();
+        memcpy(tGuiAck,pMsg->content,pMsg->length);
+
+        emit FileGoOnAck(tGuiAck);
 }
 
 void demogui::SignIn(){
