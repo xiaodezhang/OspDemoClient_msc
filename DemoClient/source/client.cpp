@@ -349,14 +349,27 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
                 goto post2gui;
         }
 
-        OspLog(LOG_LVL_ERROR,"[FileUploadCmd] file :%s\n",pMsg->content);
-
         if(CheckFileIn((LPCSTR)pMsg->content,&tnFile) && STATUS_FINISHED != tnFile->FileStatus
                         && STATUS_REMOVED != tnFile->FileStatus){
                 OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
                 wGuiAck = -12;
                 goto post2gui;
         }
+#if 1
+        if(CheckFileIn((LPCSTR)pMsg->content,&tnFile)){
+                if(STATUS_FINISHED == tnFile->FileStatus){
+                        OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
+                        wGuiAck = -10;
+                        goto post2gui;
+
+                }else if(STATUS_REMOVED != tnFile->FileStatus){
+                        OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
+                        wGuiAck = -12;
+                        goto post2gui;
+                }
+        }
+#endif
+
 
         if(!(ccIns = GetPendingIns())){
                 OspLog(SYS_LOG_LEVEL, "[FileUploadCmd]no pending instance,please wait...\n");
@@ -423,7 +436,6 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
         m_dwUploadFileSize = 0;
         strcpy((LPSTR)file_name_path,(LPCSTR)pMsg->content);
         strcpy((LPSTR)tGuiAck.FileName,(LPCSTR)pMsg->content);
-        OspLog(LOG_LVL_ERROR,"[FileUploadCmdDeal] file :%s\n",file_name_path);
         
         if(!(file = fopen((LPCSTR)file_name_path,"rb"))){
 		
