@@ -37,7 +37,7 @@ class fileFrame: public QFrame{
 	Q_OBJECT
 
 public:
-    fileFrame(QWidget *parent = 0,u16 wfileNum = 0,LPCSTR fileName = "");
+    fileFrame(QWidget *parent = 0,u16 wfileNum = 0,LPCSTR fileName = "",u16 moveFlag = 0);
     ~fileFrame(){}
 
 public:
@@ -45,7 +45,8 @@ public:
     QLabel *Lb_FileName;
     QToolButton *TBtn_GoOn,*TBtn_Cancel,*TBtn_Remove;
     unsigned char m_wFileName[MAX_FILE_NAME_LENGTH];
-
+    u16           m_wMoveFlag;
+    u16           m_wMoveStep;
 public slots:
     void FileCancel();
     void FileGoOn();
@@ -99,6 +100,7 @@ public slots:
         void FileCancelShow(TGuiAck*);
         void FileGoOnShow(TGuiAck*);
         void FileRemoveShow(TGuiAck*);
+
 private: 
         QFileDialog *qFileDialog;
         fileFrame * tFileFrame[MAX_FILE_NUM];

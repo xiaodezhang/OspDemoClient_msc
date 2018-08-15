@@ -344,7 +344,7 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
         }
 
         if(pMsg->length > MAX_FILE_NAME_LENGTH){
-                OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
+                OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]msg size error\n");
                 wGuiAck = -11;
                 goto post2gui;
         }
@@ -458,6 +458,7 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
         emFileStatus = STATUS_SEND_UPLOAD;
 
         tGuiAck.dwFileSize = m_dwFileSize;
+        tGuiAck.wGuiAck = wGuiAck;
         if(OSP_OK != post(MAKEIID(GUI_APP_ID,DAEMON),GUI_FILE_SIZE_ACK
                ,&tGuiAck,sizeof(tGuiAck),g_dwGuiNode)){
                 OspLog(LOG_LVL_ERROR,"[FileUploadCmdDeal]post error\n");
@@ -546,6 +547,7 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
                 m_dwUploadFileSize += buffer_size;
 
                 tGuiAck.dwUploadFileSize = m_dwUploadFileSize;
+                tGuiAck.wGuiAck = wGuiAck;
                 if(OSP_OK != post(MAKEIID(GUI_APP_ID,DAEMON),GUI_UPLOAD_FILE_SIZE_ACK
                        ,&tGuiAck,sizeof(tGuiAck),g_dwGuiNode)){
                         OspLog(LOG_LVL_ERROR,"[FileUploadAck]post error\n");
