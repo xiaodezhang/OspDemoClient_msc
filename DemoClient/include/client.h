@@ -77,6 +77,17 @@
 
 #define MAKEESTATE(state,event) ((u32)((event) << 4 + (state)))
 
+#define STATUS_INIT                     (s32)-1
+#define STATUS_RECEIVE_UPLOAD           (s32)9
+#define STATUS_RECEIVE_CANCEL           (s32)10
+#define STATUS_RECEIVE_REMOVE           (s32)12
+#define STATUS_UPLOADING                (s32)13
+#define STATUS_CANCELLED                (s32)14
+#define STATUS_REMOVED                  (s32)15
+#define STATUS_FINISHED                 (s32)16
+
+
+
 typedef struct tagSinInfo{
         s8 Username[AUTHORIZATION_NAME_SIZE];
         s8 Passwd[AUTHORIZATION_NAME_SIZE];
@@ -92,17 +103,8 @@ typedef struct tagGuiAck{
 typedef enum tagEM_FILE_STATUS{
                 STATUS_INIT             = -1,
                 //processing state
-                STATUS_UPLOAD_CMD       = 1,
-                STATUS_CANCEL_CMD       = 2,
-                STATUS_GO_ON_CMD        = 3,
-                STATUS_REMOVE_CMD       = 4,
-                STATUS_SEND_UPLOAD      = 5,
-                STATUS_SEND_CANCEL      = 6,
-                STATUS_SEND_GO_ON        = 7,
-                STATUS_SEND_REMOVE      = 8,
                 STATUS_RECEIVE_UPLOAD   = 9,
                 STATUS_RECEIVE_CANCEL   = 10,
-                STATUS_RECEIVE_GO_ON     = 11,
                 STATUS_RECEIVE_REMOVE   = 12,
                 //stable state
                 STATUS_UPLOADING        = 13,
@@ -130,7 +132,6 @@ private:
         s8          buffer[BUFFER_SIZE];
         u32         m_dwUploadFileSize;
         u32         m_dwFileSize;      
-        EM_FILE_STATUS emFileStatus;
         u8          m_byServerIp[MAX_IP_LENGTH];
         u16         m_wServerPort;
 #if MULTY_APP
@@ -215,7 +216,7 @@ class TFileList{
 public:
 
         u8                     FileName[MAX_FILE_NAME_LENGTH];
-        EM_FILE_STATUS         FileStatus;
+        s32                    FileStatus;
         u16                    DealInstance;
         u32                    UploadFileSize;
         u32                    FileSize;

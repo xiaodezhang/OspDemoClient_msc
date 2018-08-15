@@ -51,7 +51,7 @@ struct list_head tFileList;
 typedef struct tagFileList{
         struct list_head       tListHead;
         u8                     FileName[MAX_FILE_NAME_LENGTH];
-        EM_FILE_STATUS         FileStatus;
+        s32                    FileStatus;
         u16                    DealInstance;
         u32                    UploadFileSize;
         u32                    FileSize;
@@ -65,12 +65,12 @@ typedef struct tagDemoInfo{
         u8                     FileName[MAX_FILE_NAME_LENGTH];
         u32                    UploadFileSize;
         u32                    FileSize;
-        EM_FILE_STATUS         emFileStatus;
+        s32                    emFileStatus;
 }TDemoInfo;
 
 
 typedef struct tagUploadAck{
-        EM_FILE_STATUS emFileStatus;
+        s32            emFileStatus;
         s16            wClientAck;
 }TUploadAck;
 
@@ -467,7 +467,6 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
                 return;
         }
 
-        emFileStatus = STATUS_SEND_UPLOAD;
 
         tGuiAck.dwFileSize = m_dwFileSize;
         tGuiAck.wGuiAck = wGuiAck;
@@ -513,6 +512,7 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
         struct list_head *tFileHead,*templist;
         TFileList *tnFile;
         TUploadAck *tUploadAck;
+        s32 emFileStatus;
 
         wGuiAck = 0;
 
@@ -645,7 +645,6 @@ void CCInstance::FileFinishAck(CMessage* const pMsg){
         tFile->FileStatus = STATUS_FINISHED;
 
         OspLog(SYS_LOG_LEVEL,"[FileFinishAck]file upload finish\n");
-        emFileStatus = STATUS_FINISHED;
         NextState(IDLE_STATE);
 
         tGuiAck.wGuiAck = wGuiAck;
@@ -753,16 +752,6 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                 return;
         }
 
-#if 0
-        if(emFileStatus >= STATUS_SEND_UPLOAD&&
-                        emFileStatus <= STATUS_RECEIVE_REMOVE){
-                if(OSP_OK != post(MAKEIID(GetAppID(),GetInsID()),SIGN_OUT_CMD
-                               ,NULL,0)){
-                        OspLog(LOG_LVL_ERROR,"[SignOutCmd] post error\n");
-                }
-                return;
-        }
-#endif
 
 #if _LINUX_
       
@@ -778,7 +767,6 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                         tnFile->FileStatus = STATUS_CANCELLED;
                         tnFile->UploadFileSize = pIns->m_dwUploadFileSize;
                         tnFile->FileSize = pIns->m_dwFileSize;
-//                                pIns->emFileStatus = STATUS_CANCELLED;
                         pIns->m_curState = IDLE_STATE;
                         if(pIns->file){
                                 if(fclose(pIns->file) == 0){
@@ -796,7 +784,6 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
 
                 tnFile->FileStatus = STATUS_INIT;
                 pIns->m_curState = IDLE_STATE;
-                pIns->emFileStatus = STATUS_INIT;
                 if(pIns->file){
                         if(fclose(pIns->file) == 0){
                                 OspLog(SYS_LOG_LEVEL,"[SignOutAck]file closed\n");
@@ -838,7 +825,6 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
 
                 (*iter)->FileStatus = STATUS_INIT;
                 pIns->m_curState = IDLE_STATE;
-                pIns->emFileStatus = STATUS_INIT;
                 if(pIns->file){
                         if(fclose(pIns->file) == 0){
                                 OspLog(SYS_LOG_LEVEL,"[SignOutAck]file closed\n");
@@ -1154,7 +1140,6 @@ void CCInstance::RemoveCmdDeal(CMessage* const pMsg){
             OspLog(LOG_LVL_ERROR,"[RemoveCmdDeal] post error\n");
             return;
     }
-    emFileStatus = STATUS_SEND_REMOVE;
 
 }
 
@@ -1173,7 +1158,6 @@ void CCInstance::StableRemoveCmdDeal(CMessage* const pMsg){
 
 
     strcpy((LPSTR)file_name_path,(LPCSTR)pMsg->content);
-    emFileStatus = STATUS_SEND_REMOVE;
 
 }
 
@@ -1212,7 +1196,6 @@ void CCInstance::FileRemoveAck(CMessage* const pMsg){
 
         CheckFileIn((LPCSTR)file_name_path,&tFile);
         tFile->FileStatus = STATUS_REMOVED;
-        emFileStatus = STATUS_REMOVED;
 #if 0
         m_dwUploadFileSize = 0;
         m_dwFileSize = 0;
@@ -1301,19 +1284,6 @@ void CCInstance::CancelCmdDeal(CMessage* const pMsg){
                 return;
         }
 
-#if 0
-     
-        if(emFileStatus >= STATUS_SEND_UPLOAD&&
-                        emFileStatus <= STATUS_RECEIVE_REMOVE){
-                if(OSP_OK != post(MAKEIID(GetAppID(),GetInsID()),SEND_CANCEL_CMD_DEAL
-                               ,NULL,0)){
-                        OspLog(LOG_LVL_ERROR,"[CancelCmdDeal] post error\n");
-                }
-                return;
-        }
-
-#endif
-
         if(OSP_OK != post(m_dwDisInsID,SEND_CANCEL
                        ,pMsg->content,pMsg->length,g_dwdstNode)){
                 OspLog(LOG_LVL_ERROR,"[CancelCmdDeal] post error\n");
@@ -1321,7 +1291,6 @@ void CCInstance::CancelCmdDeal(CMessage* const pMsg){
         }
 
         OspLog(SYS_LOG_LEVEL,"[CancelCmdDeal]send cancel\n");
-        emFileStatus = STATUS_SEND_CANCEL;
 }
 
 void CCInstance::FileCancelAck(CMessage* const pMsg){
@@ -1362,7 +1331,6 @@ void CCInstance::FileCancelAck(CMessage* const pMsg){
         tFile->FileStatus = STATUS_CANCELLED;
         tFile->UploadFileSize = m_dwUploadFileSize;
         tFile->FileSize = m_dwFileSize;
-        emFileStatus = STATUS_CANCELLED;
 	   
 
 post2gui:
