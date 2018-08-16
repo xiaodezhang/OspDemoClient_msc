@@ -77,14 +77,14 @@
 
 #define MAKEESTATE(state,event) ((u32)((event) << 4 + (state)))
 
-#define STATUS_INIT                     (s32)-1
-#define STATUS_RECEIVE_UPLOAD           (s32)9
-#define STATUS_RECEIVE_CANCEL           (s32)10
-#define STATUS_RECEIVE_REMOVE           (s32)12
-#define STATUS_UPLOADING                (s32)13
-#define STATUS_CANCELLED                (s32)14
-#define STATUS_REMOVED                  (s32)15
-#define STATUS_FINISHED                 (s32)16
+#define STATUS_INIT                     (u32)0
+#define STATUS_RECEIVE_UPLOAD           (u32)9
+#define STATUS_RECEIVE_CANCEL           (u32)10
+#define STATUS_RECEIVE_REMOVE           (u32)12
+#define STATUS_UPLOADING                (u32)13
+#define STATUS_CANCELLED                (u32)14
+#define STATUS_REMOVED                  (u32)15
+#define STATUS_FINISHED                 (u32)16
 
 
 
@@ -100,6 +100,7 @@ typedef struct tagGuiAck{
         u8                     FileName[MAX_FILE_NAME_LENGTH];
 }TGuiAck;
 
+#if 0
 typedef enum tagEM_FILE_STATUS{
                 STATUS_INIT             = -1,
                 //processing state
@@ -112,6 +113,7 @@ typedef enum tagEM_FILE_STATUS{
                 STATUS_REMOVED          = 15,
                 STATUS_FINISHED         = 16
 }EM_FILE_STATUS;
+#endif
 
 class CCInstance : public CInstance{
 
@@ -150,7 +152,7 @@ public:
 					 ,m_dwFileSize(0)
                      ,m_dwUploadFileSize(0)
                      ,m_tCmdChain(NULL)
-                     ,m_tCmdDaemonChain(NULL),emFileStatus(STATUS_INIT)
+                     ,m_tCmdDaemonChain(NULL)
                      ,m_wServerPort(SERVER_PORT){
                 memset(file_name_path,0,sizeof(u8)*MAX_FILE_NAME_LENGTH);
                 memset(buffer,0,sizeof(u8)*BUFFER_SIZE);
@@ -216,14 +218,16 @@ class TFileList{
 public:
 
         u8                     FileName[MAX_FILE_NAME_LENGTH];
-        s32                    FileStatus;
+        u32                    FileStatus;
         u16                    DealInstance;
         u32                    UploadFileSize;
         u32                    FileSize;
 
+#if 0
         inline bool operator == (const TFileList &file) const{
                 return (strcmp((LPCSTR)file.FileName,(LPCSTR)FileName) == 0);
         }
+#endif
 };
 #endif
 

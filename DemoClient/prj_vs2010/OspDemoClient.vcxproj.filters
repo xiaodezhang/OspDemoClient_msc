@@ -53,6 +53,9 @@
     <ClCompile Include="..\gui\GeneratedFiles\Debug\moc_demogui.cpp">
       <Filter>Generated Files\Debug</Filter>
     </ClCompile>
+    <ClCompile Include="..\jsmn\jsmn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\gui\demogui.ui">
@@ -79,6 +82,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\jsmn\jsmn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

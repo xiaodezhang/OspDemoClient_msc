@@ -241,20 +241,19 @@ void demogui::FileCancelShow(TGuiAck* tGuiAck){
         LPSTR p;
         s16 i;
 
-        if(tGuiAck->wGuiAck != 0){
-              if(tGuiAck->wGuiAck != -14){
-                      sprintf(mes,"file:%s cancel error:%d",tGuiAck->FileName,tGuiAck->wGuiAck);
-                      ui.TE_ACKShow->append(QString((LPCSTR)mes));
-                      delete tGuiAck;
-                      return;
-              }
-        }
-
-
         if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
         }else{
                 strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+        }
+
+        if(tGuiAck->wGuiAck != 0){
+              if(tGuiAck->wGuiAck != -14){
+                      sprintf(mes,"file:%s cancel error:%d",mes,tGuiAck->wGuiAck);
+                      ui.TE_ACKShow->append(QString((LPCSTR)mes));
+                      delete tGuiAck;
+                      return;
+              }
         }
 
         strcat((LPSTR)mes," suspended");
@@ -282,8 +281,14 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
         QPoint point; 
         s16 i,j;
 
+        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
+                strcpy((LPSTR)mes,p+1);
+        }else{
+                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+        }
+
         if(tGuiAck->wGuiAck != 0){
-              sprintf((LPSTR)mes,"file Remove error:%d",tGuiAck->wGuiAck);
+              sprintf((LPSTR)mes,"file:%s Remove error:%d",mes,tGuiAck->wGuiAck);
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
@@ -312,11 +317,6 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
                 }
         }
 
-        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
-                strcpy((LPSTR)mes,p+1);
-        }else{
-                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
-        }
 
         strcat((LPSTR)mes," Removed");
         ui.TE_ACKShow->append(QString((LPCSTR(mes))));
@@ -331,17 +331,17 @@ void demogui::FileGoOnShow(TGuiAck* tGuiAck){
         LPSTR p;
         s16 i;
 
-        if(tGuiAck->wGuiAck != 0){
-              sprintf((LPSTR)mes,"file GoOn error:%d",tGuiAck->wGuiAck);
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
-              delete tGuiAck;
-              return;
-        }
-
         if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
         }else{
                 strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+        }
+
+        if(tGuiAck->wGuiAck != 0){
+              sprintf((LPSTR)mes,"file%s GoOn error:%d",mes,tGuiAck->wGuiAck);
+              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              delete tGuiAck;
+              return;
         }
 
         strcat((LPSTR)mes," go on uploading");
@@ -374,28 +374,6 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
         }
 
         if(tGuiAck->wGuiAck != 0){
-#if 0
-              if(tGuiAck->wGuiAck = 4){
-                     for(i = 0;i < wFileNum;i++){
-                             if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
-                                     tFileFrame[i]->close();
-                                     break;
-                             }
-
-                     }
-                     for(j = 0;j < wFileNum;j++){
-                             if(tFileFrame[i]->m_wMoveFlag < tFileFrame[j]->m_wMoveFlag)
-                             {
-                                     point = tFileFrame[j]->pos();
-                                     tFileFrame[j]->move(0,point.y()-80);
-                                     tFileFrame[j]->m_wMoveStep++;
-                             }
-                     }
-                     ui.verticalScrollBar->setMaximum(ui.verticalScrollBar->maximum()-80);
-                     g_wMoveFlag++;
-                     sprintf(mes,"file:%s being operated by another client\n",tGuiAck->FileName);
-              }
-#endif
               if(tGuiAck->wGuiAck == -10 || tGuiAck->wGuiAck == 4 
                               || tGuiAck->wGuiAck == 5 || tGuiAck->wGuiAck == -12){
                      for(i = wFileNum-1;i >= 0;i--){
@@ -419,11 +397,18 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
 
                      g_wMoveFlag++;
                      ui.verticalScrollBar->setMaximum((wFileNum-g_wMoveFlag)*80);
-                     if(tGuiAck->wGuiAck == 4){
-                             sprintf(mes,"file:%s being operated by another client\n",tGuiAck->FileName);
+                     switch(tGuiAck->wGuiAck){
+                             case 4:sprintf(mes,"file:%s being operated by another client\n",mes);
+                                    break;
+                             case -10:sprintf(mes,"file:%s being operated by another client\n",mes);
+                                    break;
+                             case 5:sprintf(mes,"file:%s being operated by another client\n",mes);
+                                    break;
+                             case -12:sprintf(mes,"file:%s being operated by another client\n",mes);
+                                    break;
                      }
               }else{
-                     sprintf((LPSTR)mes,"file:%s upload error:%d\n",tGuiAck->FileName,tGuiAck->wGuiAck);
+                            sprintf((LPSTR)mes,"file:%s upload error:%d\n",tGuiAck->FileName,tGuiAck->wGuiAck);
               }
               ui.TE_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;

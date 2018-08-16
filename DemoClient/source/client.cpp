@@ -7,6 +7,7 @@
 #else
 #include<list>
 #endif
+#include"jsmn.h"
 
 #define CLIENT_APP_SUM           5
 #define APP_NUM_SIZE             20
@@ -14,6 +15,7 @@
 #define SERVER_DELAY             1000
 #define MY_FILE_NAME             "mydoc.7z"
 #define NATIVE_IP                "127.0.0.1"
+#define CACHE_TAIL               (8*4)
 
 #if 0
 #define MAX_CMD_REPEAT_TIMES     5
@@ -33,6 +35,7 @@ API void SendFileGoOnCmd();
 API void Disconnect2Server();
 
 static void UploadCmdSingle(const s8*);
+static int jsoneq(const char *json, jsmntok_t *tok, const char *s) ;
 
 static u32 g_dwdstNode;
 static u32 g_dwGuiNode;
@@ -51,7 +54,7 @@ struct list_head tFileList;
 typedef struct tagFileList{
         struct list_head       tListHead;
         u8                     FileName[MAX_FILE_NAME_LENGTH];
-        s32                    FileStatus;
+        u32                    FileStatus;
         u16                    DealInstance;
         u32                    UploadFileSize;
         u32                    FileSize;
@@ -65,12 +68,12 @@ typedef struct tagDemoInfo{
         u8                     FileName[MAX_FILE_NAME_LENGTH];
         u32                    UploadFileSize;
         u32                    FileSize;
-        s32                    emFileStatus;
+        u32                    FileStatus;
 }TDemoInfo;
 
 
 typedef struct tagUploadAck{
-        s32            emFileStatus;
+        u32            FileStatus;
         s16            wClientAck;
 }TUploadAck;
 
@@ -358,19 +361,17 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
 #if 1
         if(CheckFileIn((LPCSTR)pMsg->content,&tnFile)){
                 if(STATUS_FINISHED == tnFile->FileStatus){
-                        OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
+                        OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is finished\n");
                         wGuiAck = -10;
                         goto post2gui;
 
                 }else if(STATUS_REMOVED != tnFile->FileStatus){
-                        OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
+                        OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not removed\n");
                         wGuiAck = -12;
                         goto post2gui;
                 }
         }
 #endif
-
-
         if(!(ccIns = GetPendingIns())){
                 OspLog(SYS_LOG_LEVEL, "[FileUploadCmd]no pending instance,please wait...\n");
                 wGuiAck = -13;
@@ -467,7 +468,6 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
                 return;
         }
 
-
         tGuiAck.dwFileSize = m_dwFileSize;
         tGuiAck.wGuiAck = wGuiAck;
         if(OSP_OK != post(MAKEIID(GUI_APP_ID,DAEMON),GUI_FILE_SIZE_ACK
@@ -511,8 +511,17 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
         size_t buffer_size;
         struct list_head *tFileHead,*templist;
         TFileList *tnFile;
+#if 0
         TUploadAck *tUploadAck;
-        s32 emFileStatus;
+#endif
+        u32 FileStatus;
+        jsmn_parser p;
+        jsmntok_t t[128];
+        int r,i;
+        u8* uploadAck;
+        s8 wClientAck_s[3+CACHE_TAIL];
+        u8 FileStatus_s[5+CACHE_TAIL];
+        s32 wClientAck;
 
         wGuiAck = 0;
 
@@ -526,17 +535,54 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
                  wGuiAck = -22;
                  goto postError2gui;
         }
-
-        m_dwDisInsID = pMsg->srcid;
-        tUploadAck = (TUploadAck*)pMsg->content;
-        emFileStatus = tUploadAck->emFileStatus;
-
         strcpy((LPSTR)tGuiAck.FileName,(LPCSTR)file_name_path);
+        m_dwDisInsID = pMsg->srcid;
+        uploadAck = (u8*)pMsg->content;
+        jsmn_init(&p);
+        r = jsmn_parse(&p,(LPCSTR)uploadAck,pMsg->length,t,sizeof(t)/sizeof(t[0]));
+        if(r < 0){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json parser error:%d\n",r);
+                wGuiAck = -25;
+                goto postError2gui;
+        }
+        if(r < 1 || t[0].type != JSMN_OBJECT){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json object expected\n");
+                wGuiAck = -26;
+                goto postError2gui;
+        }
+
+        for(i = 1;i < r;i++){
+                if(jsoneq((LPCSTR)uploadAck,&t[i],"ClientAck") == 0){
+                        sprintf(wClientAck_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        uploadAck+t[i+1].start);
+                        wClientAck = atoi((LPCSTR)wClientAck_s);
+                        i++;
+                }
+                else if(jsoneq((LPCSTR)uploadAck,&t[i],"FileStatus") == 0){
+                        sprintf((LPSTR)FileStatus_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        uploadAck+t[i+1].start);
+                        FileStatus = atoi((LPCSTR)FileStatus_s);
+                        i++;
+                }else{
+                        OspLog(LOG_LVL_ERROR,"[FileUploadAck]Unexpected key:%.*s\n"
+                                        ,t[i].end-t[i].start,uploadAck+t[i].start);
+
+                }
+        }
+#if 0
+        tUploadAck = (TUploadAck*)pMsg->content;
+        FileStatus = tUploadAck->FileStatus;
         if(0 != tUploadAck->wClientAck){
                 wGuiAck = tUploadAck->wClientAck;
                 goto postError2gui;
         }
-        if(emFileStatus == STATUS_UPLOADING){
+#endif
+        if(0 != wClientAck){
+                wGuiAck = wClientAck;
+                goto postError2gui;
+        }
+
+        if(FileStatus == STATUS_UPLOADING){
                 buffer_size = fread(buffer,1,sizeof(s8)*BUFFER_SIZE,file);
                 if(ferror(file)){
                         OspLog(LOG_LVL_ERROR,"[FileUploadAck] read-file error\n");
@@ -564,20 +610,20 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
                        ,&tGuiAck,sizeof(tGuiAck),g_dwGuiNode)){
                         OspLog(LOG_LVL_ERROR,"[FileUploadAck]post error\n");
                 }
-        }else if(emFileStatus == STATUS_RECEIVE_CANCEL){
+        }else if(FileStatus == STATUS_RECEIVE_CANCEL){
                 if(OSP_OK != post(pMsg->srcid,FILE_CANCEL
                               ,NULL,0,g_dwdstNode)){
                      OspLog(LOG_LVL_ERROR,"[FileUploadAck]FILE_CANCEL post error\n");
                      return;
                 }
-        }else if(emFileStatus == STATUS_RECEIVE_REMOVE){
+        }else if(FileStatus == STATUS_RECEIVE_REMOVE){
                 if(OSP_OK != post(pMsg->srcid,FILE_REMOVE
                               ,NULL,0,g_dwdstNode)){
                      OspLog(LOG_LVL_ERROR,"[FileUploadAck]FILE_REMOVE post error\n");
                      return;
                 }
         }else{
-                OspLog(LOG_LVL_ERROR,"[FileUploadAck]get incorrect file status:%d\n",emFileStatus);
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]get incorrect file status:%d\n",FileStatus);
                 printf("[FileUploadAck]get incorrect file status\n");
                 wGuiAck = -24;
                 goto postError2gui;
@@ -1091,7 +1137,7 @@ void CCInstance::RemoveCmd(CMessage* const pMsg){
                     OspLog(LOG_LVL_ERROR,"[RemoveCmd] post error\n");
                     return;
             }
-            tFile->FileStatus = STATUS_REMOVE_CMD;
+
             return;
     }
 
@@ -1113,7 +1159,7 @@ void CCInstance::RemoveCmd(CMessage* const pMsg){
             return;
     }
     ccIns->m_curState = RUNNING_STATE;
-    tFile->FileStatus = STATUS_REMOVE_CMD;
+
     tFile->DealInstance = ccIns->GetInsID();
     return;
 
@@ -1263,7 +1309,7 @@ void CCInstance::CancelCmd(CMessage* const pMsg){
                 wGuiAck = -14;
                 goto postError2gui;
         }
-        tFile->FileStatus = STATUS_CANCEL_CMD;
+ 
         return;
 
 postError2gui:
@@ -1528,5 +1574,13 @@ static CCInstance* GetPendingIns(){
 	   g_cCApp.wLastIdleInstID = instCount;
        return pIns;
 
+}
+
+static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
+	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
+			strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
+		return 0;
+	}
+	return -1;
 }
 
