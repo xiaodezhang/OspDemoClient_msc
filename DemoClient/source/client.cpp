@@ -16,6 +16,7 @@
 #define MY_FILE_NAME             "mydoc.7z"
 #define NATIVE_IP                "127.0.0.1"
 #define CACHE_TAIL               (8*4)
+#define MAX_SIGN_INFO_LENGTH     2000
 
 #if 0
 #define MAX_CMD_REPEAT_TIMES     5
@@ -352,13 +353,6 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
                 goto post2gui;
         }
 
-        if(CheckFileIn((LPCSTR)pMsg->content,&tnFile) && STATUS_FINISHED != tnFile->FileStatus
-                        && STATUS_REMOVED != tnFile->FileStatus){
-                OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is not finished or removed\n");
-                wGuiAck = -12;
-                goto post2gui;
-        }
-#if 1
         if(CheckFileIn((LPCSTR)pMsg->content,&tnFile)){
                 if(STATUS_FINISHED == tnFile->FileStatus){
                         OspLog(SYS_LOG_LEVEL,"[FileUploadCmd]file is finished\n");
@@ -371,7 +365,6 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
                         goto post2gui;
                 }
         }
-#endif
         if(!(ccIns = GetPendingIns())){
                 OspLog(SYS_LOG_LEVEL, "[FileUploadCmd]no pending instance,please wait...\n");
                 wGuiAck = -13;
@@ -569,14 +562,6 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
 
                 }
         }
-#if 0
-        tUploadAck = (TUploadAck*)pMsg->content;
-        FileStatus = tUploadAck->FileStatus;
-        if(0 != tUploadAck->wClientAck){
-                wGuiAck = tUploadAck->wClientAck;
-                goto postError2gui;
-        }
-#endif
         if(0 != wClientAck){
                 wGuiAck = wClientAck;
                 goto postError2gui;
@@ -708,20 +693,11 @@ void CCInstance::FileFinishAck(CMessage* const pMsg){
 
 void CCInstance::SignInCmd(CMessage *const pMsg){
 
+        TSinInfo* tSinInfo;
+        char sinInfo[MAX_SIGN_INFO_LENGTH];
+
         wGuiAck = 0;
-
         if(!g_bConnectedFlag){
-
-#if 0
-                scanf("ip:%s port:%d\n",server_ip,server_port);
-                g_dwdstNode = OspConnectTcpNode(inet_addr(SERVER_IP),SERVER_PORT,10,3);
-                if(INVALID_NODE == g_dwdstNode){
-                        OspLog(LOG_LVL_ERROR, "[SignInCmd]Connect to server faild.\n");
-                        return;
-                }else{
-                        m_bConnectedFlag = true;
-                }
-#endif
                 OspLog(SYS_LOG_LEVEL,"[SignInCmd]not connected\n");
                 return;
         }
@@ -735,9 +711,12 @@ void CCInstance::SignInCmd(CMessage *const pMsg){
                 wGuiAck = -15;
                 goto post2gui;
         }
+        tSinInfo = (TSinInfo*)pMsg->content;
 
+        sprintf(sinInfo,"{\"UserName\":%s,\"Pwd\":%s}"
+                        ,tSinInfo->Username,tSinInfo->Passwd);
         if(post(MAKEIID(SERVER_APP_ID,CInstance::DAEMON),SIGN_IN
-                    ,pMsg->content,pMsg->length,g_dwdstNode) != OSP_OK){
+                    ,(LPCSTR)sinInfo,strlen((LPCSTR)sinInfo)+1,g_dwdstNode) != OSP_OK){
                 OspLog(LOG_LVL_ERROR,"[SignInCmd] post error\n");
                 return;
         }
@@ -752,8 +731,16 @@ post2gui:
 
 void CCInstance::SignInAck(CMessage * const pMsg){
 
-        wGuiAck = 0;
+        jsmn_parser p;
+        jsmntok_t t[128];
+        int r,i;
+        s8 wClientAck_s[8+CACHE_TAIL];
+        s32 wClientAck;
+        s8* signInAck;
 
+
+
+        wGuiAck = 0;
         if(!g_bConnectedFlag){
                 OspLog(LOG_LVL_ERROR,"[SignInAck]disconnected\n");
                 return;
@@ -765,8 +752,35 @@ void CCInstance::SignInAck(CMessage * const pMsg){
                 goto post2gui;
         }
 
-        wGuiAck = *(s16*)(pMsg->content);
-        if(0 == wGuiAck){
+        signInAck = (s8*)pMsg->content;
+        jsmn_init(&p);
+        r = jsmn_parse(&p,(LPCSTR)signInAck,pMsg->length,t,sizeof(t)/sizeof(t[0]));
+        if(r < 0){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json parser error:%d\n",r);
+                wGuiAck = -10;
+                goto post2gui;
+        }
+        if(r < 1 || t[0].type != JSMN_OBJECT){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json object expected\n");
+                wGuiAck = -9;
+                goto post2gui;
+        }
+
+        for(i = 1;i < r;i++){
+                if(jsoneq((LPCSTR)signInAck,&t[i],"ClientAck") == 0){
+                        sprintf(wClientAck_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        signInAck+t[i+1].start);
+                        wClientAck = atoi((LPCSTR)wClientAck_s);
+                        i++;
+                }else{
+                        OspLog(LOG_LVL_ERROR,"[FileUploadAck]Unexpected key:%.*s\n"
+                                        ,t[i].end-t[i].start,signInAck+t[i].start);
+
+                }
+        }
+
+        wGuiAck = wClientAck;
+        if(0 == wClientAck){
                 g_bSignFlag = true;
                 OspLog(SYS_LOG_LEVEL,"[SignInAck]sign in successfully\n");
         }
@@ -896,8 +910,14 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
 
 void CCInstance::SignOutAck(CMessage * const pMsg){
 
-        wGuiAck = 0;
+        jsmn_parser p;
+        jsmntok_t t[128];
+        int r,i;
+        s8 wClientAck_s[8+CACHE_TAIL];
+        s32 wClientAck;
+        s8* signOutAck;
 
+        wGuiAck = 0;
         if(!g_bConnectedFlag){
                 OspLog(LOG_LVL_ERROR,"[SignOutAck]disconnected\n");
                 return;
@@ -909,11 +929,36 @@ void CCInstance::SignOutAck(CMessage * const pMsg){
                 goto post2gui;
         }
 
-        wGuiAck = *(u16*)(pMsg->content);
+        signOutAck = (s8*)pMsg->content;
+        jsmn_init(&p);
+        r = jsmn_parse(&p,(LPCSTR)signOutAck,pMsg->length,t,sizeof(t)/sizeof(t[0]));
+        if(r < 0){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json parser error:%d\n",r);
+                wGuiAck = -10;
+                goto post2gui;
+        }
+        if(r < 1 || t[0].type != JSMN_OBJECT){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json object expected\n");
+                wGuiAck = -9;
+                goto post2gui;
+        }
+
+        for(i = 1;i < r;i++){
+                if(jsoneq((LPCSTR)signOutAck,&t[i],"ClientAck") == 0){
+                        sprintf(wClientAck_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        signOutAck+t[i+1].start);
+                        wClientAck = atoi((LPCSTR)wClientAck_s);
+                        i++;
+                }else{
+                        OspLog(LOG_LVL_ERROR,"[FileUploadAck]Unexpected key:%.*s\n"
+                                        ,t[i].end-t[i].start,signOutAck+t[i].start);
+
+                }
+        }
+        wGuiAck = wClientAck;
         if(0 == wGuiAck){
                 g_bSignFlag = false;
                 OspLog(SYS_LOG_LEVEL,"[SignOutAck]sign out\n");
-
         }
         
 post2gui:

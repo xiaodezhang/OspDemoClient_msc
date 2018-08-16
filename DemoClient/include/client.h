@@ -17,7 +17,7 @@
 #define CLIENT_APP_PRI               (u8)80
 #define SIGN_STATUS_IN                (1)
 #define SIGN_STATUS_OUT               (0)
-#define AUTHORIZATION_NAME_SIZE       (20)
+#define AUTHORIZATION_NAME_SIZE       (200)
 #define MAX_IP_LENGTH                 (16)
 #define SERVER_IP                    "172.16.236.241"
 #define SERVER_PORT                  ((u16)20000)

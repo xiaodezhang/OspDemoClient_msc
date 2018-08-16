@@ -41,7 +41,7 @@ LIB_PATH = $(CURDIR)/../../common/lib/debug/linux
 ## Add driver-specific include directory to the search path
 
 INC_PATH += $(CURDIR) $(CURDIR)/../include \
-	        $(CURDIR)/../../common/include
+	        $(CURDIR)/../../common/include \
 
 ifeq ($(PWLIB_SUPPORT),1)
    INC_PATH += $(PWLIBDIR)/include/ptlib/unix $(PWLIBDIR)/include
