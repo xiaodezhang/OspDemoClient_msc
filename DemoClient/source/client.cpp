@@ -652,6 +652,13 @@ postError2gui:
 void CCInstance::FileFinishAck(CMessage* const pMsg){
         
         TFileList *tFile;
+        jsmn_parser p;
+        jsmntok_t t[128];
+        int r,i;
+        s8 wClientAck_s[8+CACHE_TAIL];
+        s32 wClientAck;
+        s8* fileFinishAck;
+
 
         wGuiAck = 0;
 
@@ -661,9 +668,34 @@ void CCInstance::FileFinishAck(CMessage* const pMsg){
         }
         if(!pMsg->content || pMsg->length <= 0){
                 wGuiAck = -1;
-        }else{
-                wGuiAck = *(u16*)pMsg->content;
         }
+
+        fileFinishAck= (s8*)pMsg->content;
+        jsmn_init(&p);
+        r = jsmn_parse(&p,(LPCSTR)fileFinishAck,pMsg->length,t,sizeof(t)/sizeof(t[0]));
+        if(r < 0){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json parser error:%d\n",r);
+                wGuiAck = -10;
+        }
+        if(r < 1 || t[0].type != JSMN_OBJECT){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json object expected\n");
+                wGuiAck = -9;
+        }
+
+        for(i = 1;i < r;i++){
+                if(jsoneq((LPCSTR)fileFinishAck,&t[i],"ClientAck") == 0){
+                        sprintf(wClientAck_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        fileFinishAck+t[i+1].start);
+                        wClientAck = atoi((LPCSTR)wClientAck_s);
+                        i++;
+                }else{
+                        OspLog(LOG_LVL_ERROR,"[FileUploadAck]Unexpected key:%.*s\n"
+                                        ,t[i].end-t[i].start,fileFinishAck+t[i].start);
+
+                }
+        }
+
+        wGuiAck = wClientAck;
         if(fclose(file) == 0){
                 OspLog(SYS_LOG_LEVEL,"[FileFinishAck]file closed\n");
 
@@ -1257,6 +1289,15 @@ void CCInstance::FileRemoveAck(CMessage* const pMsg){
         TFileList *tFile;
         TRemoveAck *tRemoveAck;
 
+        jsmn_parser p;
+        jsmntok_t t[128];
+        int r,i;
+        s8 wClientAck_s[8+CACHE_TAIL];
+        s8 stableFlag_s[8+CACHE_TAIL];
+        s32 wClientAck;
+        s8  stableFlag;
+        s8* fileRemoveAck;
+
 
         wGuiAck  = 0;
 
@@ -1270,13 +1311,44 @@ void CCInstance::FileRemoveAck(CMessage* const pMsg){
                 goto post2gui;
         }
 
-        tRemoveAck = (TRemoveAck*)pMsg->content;
-        if(tRemoveAck->wClientAck != 0){
-                wGuiAck = tRemoveAck->wClientAck;
+        fileRemoveAck = (s8*)pMsg->content;
+        jsmn_init(&p);
+        r = jsmn_parse(&p,(LPCSTR)fileRemoveAck,pMsg->length,t,sizeof(t)/sizeof(t[0]));
+        if(r < 0){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json parser error:%d\n",r);
+                wGuiAck = -10;
+                goto post2gui;
+        }
+        if(r < 1 || t[0].type != JSMN_OBJECT){
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json object expected\n");
+                wGuiAck = -9;
                 goto post2gui;
         }
 
-        if(!tRemoveAck->stableFlag){
+        for(i = 1;i < r;i++){
+                if(jsoneq((LPCSTR)fileRemoveAck,&t[i],"ClientAck") == 0){
+                        sprintf(wClientAck_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        fileRemoveAck+t[i+1].start);
+                        wClientAck = atoi((LPCSTR)wClientAck_s);
+                        i++;
+                }else if(jsoneq((LPCSTR)fileRemoveAck,&t[i],"stableFlag") == 0){
+                        sprintf(stableFlag_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        fileRemoveAck+t[i+1].start);
+                        stableFlag = atoi((LPCSTR)stableFlag_s);
+                        i++;
+                }else{
+                        OspLog(LOG_LVL_ERROR,"[FileUploadAck]Unexpected key:%.*s\n"
+                                        ,t[i].end-t[i].start,fileRemoveAck+t[i].start);
+
+                }
+        }
+
+        wGuiAck = wClientAck;
+        if(wGuiAck != 0){
+                goto post2gui;
+        }
+
+        if(!stableFlag){
                 if(fclose(file) == 0){
                         OspLog(SYS_LOG_LEVEL,"[FileRemoveAck]file closed\n");
                 }else{
@@ -1388,7 +1460,13 @@ void CCInstance::FileCancelAck(CMessage* const pMsg){
 
         u16 wAppId;
         TFileList *tFile;
-        u16 *wClientAck;
+        jsmn_parser p;
+        jsmntok_t t[128];
+        int r,i;
+        s8 wClientAck_s[8+CACHE_TAIL];
+        s32 wClientAck;
+        s8* fileCancelAck;
+
 
         wGuiAck = 0;
         NextState(IDLE_STATE);
@@ -1403,8 +1481,35 @@ void CCInstance::FileCancelAck(CMessage* const pMsg){
                 goto post2gui;
         }
 
-        wClientAck = (u16*)pMsg->content;
-        if((wGuiAck = *wClientAck) != 0){
+        fileCancelAck = (s8*)pMsg->content;
+        jsmn_init(&p);
+        r = jsmn_parse(&p,(LPCSTR)fileCancelAck,pMsg->length,t,sizeof(t)/sizeof(t[0]));
+        if(r < 0){
+                OspLog(LOG_LVL_ERROR,"[FileCancelAck]json parser error:%d\n",r);
+                wGuiAck = -10;
+                goto post2gui;
+        }
+        if(r < 1 || t[0].type != JSMN_OBJECT){
+                OspLog(LOG_LVL_ERROR,"[FileCancelAck]json object expected\n");
+                wGuiAck = -9;
+                goto post2gui;
+        }
+
+        for(i = 1;i < r;i++){
+                if(jsoneq((LPCSTR)fileCancelAck,&t[i],"ClientAck") == 0){
+                        sprintf(wClientAck_s,"%.*s",t[i+1].end-t[i+1].start,
+                                        fileCancelAck+t[i+1].start);
+                        wClientAck = atoi((LPCSTR)wClientAck_s);
+                        i++;
+                }else{
+                        OspLog(LOG_LVL_ERROR,"[FileCancelAck]Unexpected key:%.*s\n"
+                                        ,t[i].end-t[i].start,fileCancelAck+t[i].start);
+
+                }
+        }
+
+        wGuiAck = wClientAck;
+        if(wGuiAck != 0){
                 goto post2gui;
         }
         if(fclose(file) == 0){
@@ -1455,18 +1560,6 @@ void CCInstance::FileGoOnCmd(CMessage* const pMsg){
             wGuiAck = -12;
             goto postError2gui;
     }
-
-#if 0
-    if(tFile->FileStatus >= STATUS_UPLOAD_CMD
-                    && tFile->FileStatus <= STATUS_RECEIVE_REMOVE){
-                if(OSP_OK != post(MAKEIID(GetAppID(),GetInsID()),FILE_GO_ON_CMD
-                               ,pMsg->content,pMsg->length)){
-                        OspLog(LOG_LVL_ERROR,"[FileGoOnCmd] post error\n");
-                }
-                return;
-
-    }
-#endif
 
 	if(tFile->FileStatus != STATUS_CANCELLED){
                 OspLog(LOG_LVL_ERROR,"[FileGoOnCmd]file upload not cancelled\n");
