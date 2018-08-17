@@ -127,7 +127,18 @@ void demogui::SignInShow(){
         ui.LE_Port->setEnabled(false);
         ui.LE_User->setEnabled(false);
         ui.LE_Pwd->setEnabled(false);
-        ui.TE_ACKShow->append(QString("Sign In"));
+        ui.TB_ACKShow->append(QString("Sign In"));
+        for(int i = 0;i < wFileNum;i++){
+                if(tFileFrame[i]->isHidden()){
+                        continue;
+                }
+                tFileFrame[i]->setEnabled(true);
+                if(tFileFrame[i]->Pb_FileSize->value() 
+                                != tFileFrame[i]->Pb_FileSize->maximum()){
+                        tFileFrame[i]->TBtn_GoOn->setEnabled(true);
+                        tFileFrame[i]->TBtn_Cancel->setEnabled(false);
+                }
+        }
 }
 
 void demogui::SignOutShow(){
@@ -139,7 +150,14 @@ void demogui::SignOutShow(){
         ui.LE_Port->setEnabled(true);
         ui.LE_User->setEnabled(true);
         ui.LE_Pwd->setEnabled(true);
-        ui.TE_ACKShow->append(QString("Sign Out"));
+        ui.TB_ACKShow->append(QString("Sign Out"));
+
+        for(int i = 0;i < wFileNum;i++){
+                if(tFileFrame[i]->isHidden()){
+                        continue;
+                }
+                tFileFrame[i]->setEnabled(false);
+        }
 }
 
 
@@ -150,7 +168,7 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
 
         if(tGuiAck->wGuiAck != 0){
               sprintf(mes,"file size error:%d",tGuiAck->wGuiAck);
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
@@ -177,7 +195,7 @@ void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
 
         if(tGuiAck->wGuiAck != 0){
               sprintf(mes,"file%s upload size error:%d",tGuiAck->FileName,tGuiAck->wGuiAck);
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
@@ -205,7 +223,7 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
 
         if(tGuiAck->wGuiAck != 0){
               sprintf(mes,"file finish error:%d",tGuiAck->wGuiAck);
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
@@ -230,7 +248,7 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
         }
 
         strcat((LPSTR)mes," upload finished");
-        ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        ui.TB_ACKShow->append(QString((LPCSTR(mes))));
         //ui.verticalScrollBar->setValue(ui.verticalScrollBar->maximum());
         delete tGuiAck;
 }
@@ -250,14 +268,14 @@ void demogui::FileCancelShow(TGuiAck* tGuiAck){
         if(tGuiAck->wGuiAck != 0){
               if(tGuiAck->wGuiAck != -14){
                       sprintf(mes,"file:%s cancel error:%d",mes,tGuiAck->wGuiAck);
-                      ui.TE_ACKShow->append(QString((LPCSTR)mes));
+                      ui.TB_ACKShow->append(QString((LPCSTR)mes));
                       delete tGuiAck;
                       return;
               }
         }
 
         strcat((LPSTR)mes," suspended");
-        ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        ui.TB_ACKShow->append(QString((LPCSTR(mes))));
         for(i = wFileNum-1;i >= 0;i--){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
                         if(tFileFrame[i]->isHidden()){
@@ -289,7 +307,7 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
 
         if(tGuiAck->wGuiAck != 0){
               sprintf((LPSTR)mes,"file:%s Remove error:%d",mes,tGuiAck->wGuiAck);
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
@@ -319,7 +337,7 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
 
 
         strcat((LPSTR)mes," Removed");
-        ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        ui.TB_ACKShow->append(QString((LPCSTR(mes))));
         g_wMoveFlag++;
         ui.verticalScrollBar->setMaximum((wFileNum-g_wMoveFlag)*80);
         delete tGuiAck;
@@ -339,13 +357,13 @@ void demogui::FileGoOnShow(TGuiAck* tGuiAck){
 
         if(tGuiAck->wGuiAck != 0){
               sprintf((LPSTR)mes,"file%s GoOn error:%d",mes,tGuiAck->wGuiAck);
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
 
         strcat((LPSTR)mes," go on uploading");
-        ui.TE_ACKShow->append(QString((LPCSTR(mes))));
+        ui.TB_ACKShow->append(QString((LPCSTR(mes))));
         for(i = wFileNum-1;i >= 0;i--){
                 if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
                         if(tFileFrame[i]->isHidden()){
@@ -410,7 +428,7 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
               }else{
                             sprintf((LPSTR)mes,"file:%s upload error:%d\n",tGuiAck->FileName,tGuiAck->wGuiAck);
               }
-              ui.TE_ACKShow->append(QString((LPCSTR)mes));
+              ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
@@ -585,7 +603,7 @@ void demogui::FileUpload(){
                 tFileFrame[wFileNum] = new fileFrame(this,wFileNum,(LPCSTR)wFileName,g_wMoveFlag);
                 if(!tFileFrame[wFileNum]){
                       sprintf(mes,"file frame allocate error:%d",wFileName);
-                      ui.TE_ACKShow->append(QString((LPCSTR)mes));
+                      ui.TB_ACKShow->append(QString((LPCSTR)mes));
                       return;
                 }
                 connect(tFileFrame[wFileNum]->TBtn_Cancel,SIGNAL(clicked()),tFileFrame[wFileNum]

@@ -539,7 +539,7 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
                 goto postError2gui;
         }
         if(r < 1 || t[0].type != JSMN_OBJECT){
-                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json object expected\n");
+                OspLog(LOG_LVL_ERROR,"[FileUploadAck]json object expected:%s\n",uploadAck);
                 wGuiAck = -26;
                 goto postError2gui;
         }
@@ -851,7 +851,7 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                 tnFile = list_entry(tFileHead,TFileList,tListHead);
                 pIns = (CCInstance*)((CApp*)&g_cCApp)->GetInstance(tnFile->DealInstance);
                 if(!pIns){
-                        OspLog(LOG_LVL_ERROR,"[SignOutAck]get error ins\n");
+                        OspLog(LOG_LVL_ERROR,"[SignOutCmd]get error ins\n");
                         continue;
                 }
                 
@@ -862,9 +862,9 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                         pIns->m_curState = IDLE_STATE;
                         if(pIns->file){
                                 if(fclose(pIns->file) == 0){
-                                        OspLog(SYS_LOG_LEVEL,"[SignOutAck]file closed\n");
+                                        OspLog(SYS_LOG_LEVEL,"[SignOutCmd]file closed\n");
                                 }else{
-                                        OspLog(LOG_LVL_ERROR,"[SignOutAck]file close failed\n");
+                                        OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
                                 }
                                 file = NULL;
                         }
@@ -878,20 +878,20 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                 pIns->m_curState = IDLE_STATE;
                 if(pIns->file){
                         if(fclose(pIns->file) == 0){
-                                OspLog(SYS_LOG_LEVEL,"[SignOutAck]file closed\n");
+                                OspLog(SYS_LOG_LEVEL,"[SignOutCmd]file closed\n");
                         }else{
-                                OspLog(LOG_LVL_ERROR,"[SignOutAck]file close failed\n");
+                                OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
                         }
                         pIns->file = NULL;
                 }
         }
 #else
         list<TFileList*>::iterator iter = tFileList.begin();
-        while(iter != tFileList.end()){
+        for(;iter != tFileList.end();iter++){
 
                 pIns = (CCInstance*)((CApp*)&g_cCApp)->GetInstance((*iter)->DealInstance);
                 if(!pIns){
-                        OspLog(LOG_LVL_ERROR,"[SignOutAck]get error ins\n");
+                        OspLog(LOG_LVL_ERROR,"[SignOutCmd]get error ins\n");
                         continue;
                 }
                 
@@ -903,9 +903,9 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                         pIns->m_curState = IDLE_STATE;
                         if(pIns->file){
                                 if(fclose(pIns->file) == 0){
-                                        OspLog(SYS_LOG_LEVEL,"[SignOutAck]file closed\n");
+                                        OspLog(SYS_LOG_LEVEL,"[SignOutCmd]file closed\n");
                                 }else{
-                                        OspLog(LOG_LVL_ERROR,"[SignOutAck]file close failed\n");
+                                        OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
                                 }
                                 file = NULL;
                         }
@@ -919,13 +919,12 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                 pIns->m_curState = IDLE_STATE;
                 if(pIns->file){
                         if(fclose(pIns->file) == 0){
-                                OspLog(SYS_LOG_LEVEL,"[SignOutAck]file closed\n");
+                                OspLog(SYS_LOG_LEVEL,"[SignOutCmd]file closed\n");
                         }else{
-                                OspLog(LOG_LVL_ERROR,"[SignOutAck]file close failed\n");
+                                OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
                         }
                         pIns->file = NULL;
                 }
-                iter++;
         }
 #endif
 
