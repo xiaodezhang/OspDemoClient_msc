@@ -38,9 +38,9 @@ API void Disconnect2Server();
 static void UploadCmdSingle(const s8*);
 static int jsoneq(const char *json, jsmntok_t *tok, const char *s) ;
 
-static u32 g_dwdstNode;
 static u32 g_dwGuiNode;
-static bool        g_bConnectedFlag;    
+bool        g_bConnectedFlag;    
+u32 g_dwdstNode;
 static bool        g_bSignFlag;         
 
 static s16 wGuiAck;
@@ -170,6 +170,7 @@ int clientInit(u32 guiPort){
         g_dwdstNode = OspConnectTcpNode(inet_addr(SERVER_IP),SERVER_PORT,10,3);
         if(INVALID_NODE == g_dwdstNode){
                 OspLog(SYS_LOG_LEVEL, "[clientInit]Connect to server faild.\n");
+                g_bConnectedFlag = false;
         }else{
                 OspLog(SYS_LOG_LEVEL, "[clientInit]Connect to server successfully.\n");
     
@@ -229,8 +230,6 @@ API void Test_Sign(){
 }
 
 API void Connect2Server(){
-
-        u16 i;
 
         g_dwdstNode = OspConnectTcpNode(inet_addr(SERVER_IP),SERVER_PORT,10,3);
         if(INVALID_NODE == g_dwdstNode){
@@ -866,7 +865,7 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                                 }else{
                                         OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
                                 }
-                                file = NULL;
+                                pIns->file = NULL;
                         }
                         continue;
                 }
@@ -907,7 +906,7 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                                 }else{
                                         OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
                                 }
-                                file = NULL;
+                                pIns->file = NULL;
                         }
                         continue;
                 }
@@ -999,6 +998,75 @@ post2gui:
         }
         return;
 }
+void CCInstance::notifyDisconnect(CMessage* const pMsg){
+
+        //断开之后状态需要回???
+        u16 i;
+        CCInstance *pIns;
+
+        struct list_head *tFileHead,*templist;
+        TFileList *tnFile;
+
+        wGuiAck = 0;
+        if(!g_bConnectedFlag){
+                OspLog(LOG_LVL_ERROR,"[notifyDisConnect] not connected\n");
+                wGuiAck = -11;
+        }
+        g_bConnectedFlag = false;
+        g_bSignFlag = false;
+
+        //TODO:断点续传
+#if _LINUX_
+        list_for_each_safe(tFileHead,templist,&tFileList){
+                tnFile = list_entry(tFileHead,TFileList,tListHead);
+                list_del(&(tnFile->tListHead));
+#if THREAD_SAFE_MALLOC
+                free(tnFile);
+#else
+                delete tnFile;
+#endif
+        }
+        INIT_LIST_HEAD(&tFileList);
+#else
+        tFileList.clear();
+#if 0
+        list<TFileList*>::iterator iter = tFileList.begin();
+        while(iter != tFileList.end()){
+                iter = tFileList.erase(iter);
+                //delete iter;
+        }
+#endif
+#endif
+
+        for(i = 1;i < MAX_INS_NUM;i++){
+               pIns = (CCInstance*)((CApp*)&g_cCApp)->GetInstance(i);
+               if(!pIns){
+                   OspLog(LOG_LVL_ERROR,"[notifyDisConnect]get error ins\n");
+                   continue;
+               }
+               pIns->m_curState = IDLE_STATE;
+               if(pIns->file){
+                       if(fclose(pIns->file) == 0){
+                               OspLog(SYS_LOG_LEVEL,"[notifyDisConnect]file closed\n");
+                       }else{
+                               OspLog(LOG_LVL_ERROR,"[notifyDisConnect]file close failed\n");
+                       }
+                       pIns->file = NULL;
+               }
+        }
+#if 0
+        if(OSP_OK != OspNodeDelDiscCB(g_dwdstNode,CLIENT_APP_ID,CInstance::DAEMON)){
+               OspLog(LOG_LVL_ERROR,"[notifyDisConnect]del discb failed\n");
+        }
+#endif
+        OspLog(SYS_LOG_LEVEL, "[notifyDisConnect]disconnect\n");
+        if(OSP_OK != post(MAKEIID(GUI_APP_ID,DAEMON),GUI_DISCONNECT
+               ,&wGuiAck,sizeof(wGuiAck),g_dwGuiNode)){
+                OspLog(LOG_LVL_ERROR,"[SignOutAck]post error\n");
+        }
+        return;
+}
+
 
 void CCInstance::MsgProcessInit(){
 
@@ -1008,6 +1076,7 @@ void CCInstance::MsgProcessInit(){
 
         RegMsgProFun(MAKEESTATE(IDLE_STATE,SIGN_OUT_CMD),&CCInstance::SignOutCmd,&m_tCmdDaemonChain);
         RegMsgProFun(MAKEESTATE(IDLE_STATE,SIGN_OUT_ACK),&CCInstance::SignOutAck,&m_tCmdDaemonChain);
+        RegMsgProFun(MAKEESTATE(IDLE_STATE,OSP_DISCONNECT),&CCInstance::notifyDisconnect,&m_tCmdDaemonChain);
 
         
         RegMsgProFun(MAKEESTATE(IDLE_STATE,FILE_UPLOAD_CMD),&CCInstance::FileUploadCmd,&m_tCmdDaemonChain);
@@ -1146,9 +1215,10 @@ void CCInstance::InstanceEntry(CMessage * const pMsg){
         if(FindProcess(MAKEESTATE(curState,curEvent),&c_MsgProcess,m_tCmdChain)){
                 (this->*c_MsgProcess)(pMsg);
         }else{
-                OspLog(LOG_LVL_ERROR,"[InstanceEntry] can not find the EState,event:%d,state:%d\n"
+                if(curEvent != FILE_UPLOAD_ACK){
+                        OspLog(LOG_LVL_ERROR,"[InstanceEntry] can not find the EState,event:%d,state:%d\n"
                                 ,curEvent,curState);
-                printf("[InstanceEntry] can not find the EState\n");
+                }
         }
 }
 
@@ -1720,4 +1790,5 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 	}
 	return -1;
 }
+
 

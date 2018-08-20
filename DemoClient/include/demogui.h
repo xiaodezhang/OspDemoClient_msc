@@ -100,6 +100,7 @@ public slots:
         void FileCancelShow(TGuiAck*);
         void FileGoOnShow(TGuiAck*);
         void FileRemoveShow(TGuiAck*);
+        void DisconnectShow();
 
 private: 
         QFileDialog *qFileDialog;
@@ -157,6 +158,7 @@ signals:
        void FileCancelAck(TGuiAck*);
        void FileGoOnAck(TGuiAck*);
        void FileRemoveAck(TGuiAck*);
+       void Disconnect();
 
 private:
         u32 dwFileSize;

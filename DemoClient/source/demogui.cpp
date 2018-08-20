@@ -13,11 +13,14 @@
 
 #include<QTimer>
 
-#define MAX_MESSAGE_LENGTH    1204
+#define MAX_MESSAGE_LENGTH    1024*8
 static GuiApp* g_GuiApp;
 static demoCInstance* ins;
 API void Connect2Server();
 u16      g_wMoveFlag;
+
+extern bool g_bConnectedFlag;    
+extern u32 g_dwdstNode;
 
 fileFrame::fileFrame(QWidget*parent,u16 wfileNum,LPCSTR fileName,u16 moveFlag)
         : QFrame(parent)
@@ -53,17 +56,17 @@ fileFrame::fileFrame(QWidget*parent,u16 wfileNum,LPCSTR fileName,u16 moveFlag)
         TBtn_GoOn->setEnabled(false);
         TBtn_Cancel= new QToolButton(this);
         TBtn_Cancel->setGeometry(QRect(60, 30, 37, 18));
-        TBtn_Cancel->setText("Suspended");
+        TBtn_Cancel->setText("SP");
         TBtn_Remove = new QToolButton(this);
         TBtn_Remove->setGeometry(QRect(110, 30, 37, 18));
-        TBtn_Remove->setText("Remove");
+        TBtn_Remove->setText("RM");
 
 }
 void fileFrame::FileCancel(){
 
         if(OSP_OK != ::OspPost(MAKEIID(CLIENT_APP_ID,CInstance::DAEMON),SEND_CANCEL_CMD,
                         m_wFileName,strlen((LPCSTR)m_wFileName)+1)){
-               OspLog(LOG_LVL_ERROR,"[SignIn] post error\n");
+               OspLog(LOG_LVL_ERROR,"[FileCancel] post error\n");
                return;
         }
 }
@@ -72,7 +75,7 @@ void fileFrame::FileGoOn(){
 
         if(OSP_OK != ::OspPost(MAKEIID(CLIENT_APP_ID,CInstance::DAEMON),FILE_GO_ON_CMD,
                         m_wFileName,strlen((LPCSTR)m_wFileName)+1)){
-               OspLog(LOG_LVL_ERROR,"[SignIn] post error\n");
+               OspLog(LOG_LVL_ERROR,"[FileGoOn] post error\n");
                return;
         }
 }
@@ -81,7 +84,7 @@ void fileFrame::FileRemove(){
 
         if(OSP_OK != ::OspPost(MAKEIID(CLIENT_APP_ID,CInstance::DAEMON),SEND_REMOVE_CMD,
                         m_wFileName,strlen((LPCSTR)m_wFileName)+1)){
-               OspLog(LOG_LVL_ERROR,"[SignIn] post error\n");
+               OspLog(LOG_LVL_ERROR,"[FielRemove] post error\n");
                return;
         }
 }
@@ -116,6 +119,7 @@ demogui::demogui(QWidget *parent)
         connect(ins,SIGNAL(FileCancelAck(TGuiAck*)),this,SLOT(FileCancelShow(TGuiAck*)));
         connect(ins,SIGNAL(FileGoOnAck(TGuiAck*)),this,SLOT(FileGoOnShow(TGuiAck*)));
         connect(ins,SIGNAL(FileRemoveAck(TGuiAck*)),this,SLOT(FileRemoveShow(TGuiAck*)));
+        connect(ins,SIGNAL(Disconnect()),this,SLOT(DisconnectShow()));
 }
 
 void demogui::SignInShow(){
@@ -249,6 +253,18 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
 
         strcat((LPSTR)mes," upload finished");
         ui.TB_ACKShow->append(QString((LPCSTR(mes))));
+        for(i = wFileNum-1;i >= 0;i--){
+                if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                        if(tFileFrame[i]->isHidden()){
+                                continue;
+                        }
+                        tFileFrame[i]->TBtn_GoOn->setEnabled(false);
+                        tFileFrame[i]->TBtn_Cancel->setEnabled(false);
+                        break;
+                }
+
+        }
+
         //ui.verticalScrollBar->setValue(ui.verticalScrollBar->maximum());
         delete tGuiAck;
 }
@@ -318,9 +334,6 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
                                 continue;
                         }
 
-                        if(tFileFrame[i]->isHidden()){
-                                continue;
-                        }
                         tFileFrame[i]->close();
                         break;
                 }
@@ -341,6 +354,28 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
         g_wMoveFlag++;
         ui.verticalScrollBar->setMaximum((wFileNum-g_wMoveFlag)*80);
         delete tGuiAck;
+}
+
+void demogui::DisconnectShow(){
+        int i;
+
+        for(i = 0;i < wFileNum;i++){
+                if(tFileFrame[i]->isHidden())
+                        continue;
+                tFileFrame[i]->close();
+        }
+        wFileNum = 0;
+        g_wMoveFlag = 0;
+        LB_SignState->setText("UnSigned");
+        ui.Btn_SignOut->setEnabled(false);
+        ui.Btn_Upload->setEnabled(false);
+        ui.Btn_SignIn->setEnabled(true);
+        ui.LE_IP->setEnabled(true);
+        ui.LE_Port->setEnabled(true);
+        ui.LE_User->setEnabled(true);
+        ui.LE_Pwd->setEnabled(true);
+        ui.TB_ACKShow->append(QString("Disconnect"));
+
 }
 
 void demogui::FileGoOnShow(TGuiAck* tGuiAck){
@@ -382,13 +417,14 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
 
         LPSTR p;
         char mes[MAX_MESSAGE_LENGTH];
+        char fileName_n[MAX_FILE_NAME_LENGTH];
         s16 i,j;
         QPoint point; 
 
         if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
-                strcpy((LPSTR)mes,p+1);
+                strcpy((LPSTR)fileName_n,p+1);
         }else{
-                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+                strcpy((LPSTR)fileName_n,(LPCSTR)tGuiAck->FileName);
         }
 
         if(tGuiAck->wGuiAck != 0){
@@ -416,17 +452,17 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
                      g_wMoveFlag++;
                      ui.verticalScrollBar->setMaximum((wFileNum-g_wMoveFlag)*80);
                      switch(tGuiAck->wGuiAck){
-                             case 4:sprintf(mes,"file:%s being operated by another client\n",mes);
+                             case 4:sprintf(mes,"file:%s being operated by another client\n",fileName_n);
                                     break;
-                             case -10:sprintf(mes,"file:%s being operated by another client\n",mes);
+                             case -10:sprintf(mes,"file:%s is finished\n",fileName_n);
                                     break;
-                             case 5:sprintf(mes,"file:%s being operated by another client\n",mes);
+                             case 5:sprintf(mes,"file:%s being operated by another client\n",fileName_n);
                                     break;
-                             case -12:sprintf(mes,"file:%s being operated by another client\n",mes);
+                             case -12:sprintf(mes,"file:%s being operated\n",fileName_n);
                                     break;
                      }
               }else{
-                            sprintf((LPSTR)mes,"file:%s upload error:%d\n",tGuiAck->FileName,tGuiAck->wGuiAck);
+                            sprintf((LPSTR)mes,"file:%s upload error:%d\n",fileName_n,tGuiAck->wGuiAck);
               }
               ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
@@ -499,6 +535,8 @@ void demoCInstance::GetUploadFileSize(CMessage* const pMsg){
 }
 
 void demoCInstance::GetDisconnect(CMessage* const pMsg){
+
+        emit Disconnect();
 }
 
 void demoCInstance::GetFileUpload(CMessage* const pMsg){
@@ -559,6 +597,21 @@ void demogui::SignIn(){
 
         strcpy(tSinInfo.Username,ui.LE_User->text().toLocal8Bit());
         strcpy(tSinInfo.Passwd,ui.LE_Pwd->text().toLocal8Bit());
+
+        if(!g_bConnectedFlag){
+                g_dwdstNode = OspConnectTcpNode(inet_addr(ui.LE_IP->text().toLocal8Bit())
+                                ,ui.LE_Port->text().toInt(),10,3);
+                if(INVALID_NODE == g_dwdstNode){
+                        OspLog(LOG_LVL_KEY, "Connect extern node failed. exit.\n");
+                        ui.TB_ACKShow->append(QString("connect error,please check server's ip or port"));
+                        return;
+                }
+
+                if(OSP_OK !=OspNodeDiscCBReg(g_dwdstNode,CLIENT_APP_ID,CInstance::DAEMON)){
+                    OspLog(LOG_LVL_ERROR,"[main]regis disconnect error\n");
+                }
+                g_bConnectedFlag = true;
+        }
 
         if(OSP_OK != ::OspPost(MAKEIID(CLIENT_APP_ID,CInstance::DAEMON),SIGN_IN_CMD,
                         &tSinInfo,sizeof(tSinInfo))){
