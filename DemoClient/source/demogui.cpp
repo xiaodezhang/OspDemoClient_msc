@@ -21,6 +21,62 @@ u16      g_wMoveFlag;
 
 extern bool g_bConnectedFlag;    
 extern u32 g_dwdstNode;
+extern ServerSettings* serverSettings;
+
+ServerSettings::ServerSettings(QWidget *parent)
+        : QWidget(parent)
+{
+        FM_ui.setupUi(this);
+
+        connect(FM_ui.Btn_OK,SIGNAL(clicked()),this,SLOT(SettingsAccept()));
+        connect(FM_ui.Btn_Cancel,SIGNAL(clicked()),this,SLOT(SettingsCancel()));
+}
+
+void ServerSettings::SettingsAccept(){
+
+        FM_ui.Btn_OK->setEnabled(false);
+        FM_ui.Btn_Cancel->setEnabled(false);
+        FM_ui.LB_Show->setText("Connect to server,please waite...");
+        if(g_bConnectedFlag){
+                if(!OspDisconnectTcpNode(g_dwdstNode)){
+                        OspLog(LOG_LVL_ERROR,"[SettingsAccept]disconnect error\n");
+                        FM_ui.LB_Show->setText("disconnect error");
+                        return;
+                }
+                g_bConnectedFlag = false;
+        }
+
+        g_dwdstNode = OspConnectTcpNode(inet_addr(GetIP()),GetPort(),10,3,500);
+        if(INVALID_NODE == g_dwdstNode){
+                OspLog(LOG_LVL_KEY, "Connect extern node failed. exit.\n");
+                FM_ui.Btn_OK->setEnabled(true);
+                FM_ui.Btn_Cancel->setEnabled(true);
+                FM_ui.LB_Show->setText("can not connect to the server");
+                return;
+        }
+
+        if(OSP_OK !=OspNodeDiscCBReg(g_dwdstNode,CLIENT_APP_ID,CInstance::DAEMON)){
+            OspLog(LOG_LVL_ERROR,"[SettingsAccept]regis disconnect error\n");
+        }
+        g_bConnectedFlag = true;
+        FM_ui.Btn_OK->setEnabled(true);
+        FM_ui.Btn_Cancel->setEnabled(true);
+        FM_ui.LB_Show->setText("");
+        hide();
+}
+
+
+QByteArray ServerSettings::GetIP(){
+        return FM_ui.LE_IP->text().toLocal8Bit();
+}
+
+int ServerSettings::GetPort(){
+        return FM_ui.LE_Port->text().toInt();
+}
+
+void ServerSettings::SettingsCancel(){
+        hide();
+}
 
 fileFrame::fileFrame(QWidget*parent,u16 wfileNum,LPCSTR fileName,u16 moveFlag)
         : QFrame(parent)
@@ -107,6 +163,7 @@ demogui::demogui(QWidget *parent)
         ui.Btn_Upload->setEnabled(false);
         connect(ui.Btn_SignIn,SIGNAL(clicked()),this,SLOT(SignIn()));
         connect(ui.Btn_SignOut,SIGNAL(clicked()),this,SLOT(SignOut()));
+        connect(ui.Btn_Settings,SIGNAL(clicked()),this,SLOT(SettingsShow()));
         connect(ui.Btn_Upload,SIGNAL(clicked()),this,SLOT(FileDialogShow()));
         connect(qFileDialog,SIGNAL(accepted()),this,SLOT(FileUpload()));
         connect(ui.verticalScrollBar,SIGNAL(sliderMoved(int)),this,SLOT(S_SliderMoved(int)));
@@ -122,13 +179,17 @@ demogui::demogui(QWidget *parent)
         connect(ins,SIGNAL(Disconnect()),this,SLOT(DisconnectShow()));
 }
 
+void demogui::SettingsShow(){
+        serverSettings->show();
+}
+
 void demogui::SignInShow(){
         LB_SignState->setText("Signed");
         ui.Btn_SignOut->setEnabled(true);
         ui.Btn_Upload->setEnabled(true);
         ui.Btn_SignIn->setEnabled(false);
-        ui.LE_IP->setEnabled(false);
-        ui.LE_Port->setEnabled(false);
+//        ui.LE_IP->setEnabled(false);
+ //       ui.LE_Port->setEnabled(false);
         ui.LE_User->setEnabled(false);
         ui.LE_Pwd->setEnabled(false);
         ui.TB_ACKShow->append(QString("Sign In"));
@@ -150,8 +211,8 @@ void demogui::SignOutShow(){
         ui.Btn_SignOut->setEnabled(false);
         ui.Btn_Upload->setEnabled(false);
         ui.Btn_SignIn->setEnabled(true);
-        ui.LE_IP->setEnabled(true);
-        ui.LE_Port->setEnabled(true);
+//        ui.LE_IP->setEnabled(true);
+ //       ui.LE_Port->setEnabled(true);
         ui.LE_User->setEnabled(true);
         ui.LE_Pwd->setEnabled(true);
         ui.TB_ACKShow->append(QString("Sign Out"));
@@ -370,11 +431,11 @@ void demogui::DisconnectShow(){
         ui.Btn_SignOut->setEnabled(false);
         ui.Btn_Upload->setEnabled(false);
         ui.Btn_SignIn->setEnabled(true);
-        ui.LE_IP->setEnabled(true);
-        ui.LE_Port->setEnabled(true);
+//        ui.LE_IP->setEnabled(true);
+//        ui.LE_Port->setEnabled(true);
         ui.LE_User->setEnabled(true);
         ui.LE_Pwd->setEnabled(true);
-        ui.TB_ACKShow->append(QString("Disconnect"));
+//        ui.TB_ACKShow->append(QString("Disconnect"));
 
 }
 
@@ -593,14 +654,12 @@ void demogui::SignIn(){
 
         TSinInfo tSinInfo;
 
-//        Connect2Server();
-
         strcpy(tSinInfo.Username,ui.LE_User->text().toLocal8Bit());
         strcpy(tSinInfo.Passwd,ui.LE_Pwd->text().toLocal8Bit());
 
         if(!g_bConnectedFlag){
-                g_dwdstNode = OspConnectTcpNode(inet_addr(ui.LE_IP->text().toLocal8Bit())
-                                ,ui.LE_Port->text().toInt(),10,3);
+                g_dwdstNode = OspConnectTcpNode(inet_addr(serverSettings->GetIP())
+                                ,serverSettings->GetPort(),10,3,500);
                 if(INVALID_NODE == g_dwdstNode){
                         OspLog(LOG_LVL_KEY, "Connect extern node failed. exit.\n");
                         ui.TB_ACKShow->append(QString("connect error,please check server's ip or port"));
@@ -608,7 +667,7 @@ void demogui::SignIn(){
                 }
 
                 if(OSP_OK !=OspNodeDiscCBReg(g_dwdstNode,CLIENT_APP_ID,CInstance::DAEMON)){
-                    OspLog(LOG_LVL_ERROR,"[main]regis disconnect error\n");
+                    OspLog(LOG_LVL_ERROR,"[SignIn]regis disconnect error\n");
                 }
                 g_bConnectedFlag = true;
         }

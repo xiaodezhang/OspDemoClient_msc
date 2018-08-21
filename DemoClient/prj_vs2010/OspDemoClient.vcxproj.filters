@@ -67,6 +67,9 @@
     <CustomBuild Include="..\include\demogui.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\gui\serversettings.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gui\GeneratedFiles\ui_demogui.h">
@@ -86,6 +89,9 @@
     </ClInclude>
     <ClInclude Include="..\jsmn\jsmn.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gui\GeneratedFiles\ui_serversettings.h">
+      <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

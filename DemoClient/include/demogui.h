@@ -8,6 +8,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QToolButton>
 #include "ui_demogui.h"
+#include"ui_serversettings.h"
 #include"client.h"
 #include"commondemo.h"
 API int myOspInit();
@@ -54,20 +55,32 @@ public slots:
 
 };
 
+class ServerSettings : public QWidget{
+
+    Q_OBJECT
+private:
+	Ui::FM_ServerSettings FM_ui;
+public:
+    ServerSettings(QWidget*parent = 0);
+    ~ServerSettings(){}
+    QByteArray ServerSettings::GetIP();
+    int GetPort();
+public slots:
+    void SettingsCancel();
+    void SettingsAccept();
+};
+
 class demogui : public QWidget
 {
 	Q_OBJECT
 
 public:
 	demogui(QWidget *parent = 0);
-    ~demogui(){
-    delete qFileDialog;
-}
+    ~demogui(){}
 
 
 private:
 	Ui::demoguiClass ui;
-
 public:
         void GetSignIn(CMessage*const);
         void GetSignOut(CMessage*const);
@@ -86,7 +99,9 @@ private:
 public slots:
         void SignIn();
         void SignOut();
+        void SettingsShow();
         void FileUpload();
+
 
 
         void FileDialogShow();

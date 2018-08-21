@@ -167,7 +167,7 @@ int clientInit(u32 guiPort){
         OspRegCommand("GoOn",(void*)SendFileGoOnCmd,"");
 #endif
   
-        g_dwdstNode = OspConnectTcpNode(inet_addr(SERVER_IP),SERVER_PORT,10,3);
+        g_dwdstNode = OspConnectTcpNode(inet_addr(SERVER_IP),SERVER_PORT,10,3,500);
         if(INVALID_NODE == g_dwdstNode){
                 OspLog(SYS_LOG_LEVEL, "[clientInit]Connect to server faild.\n");
                 g_bConnectedFlag = false;
@@ -181,7 +181,7 @@ int clientInit(u32 guiPort){
                 g_bConnectedFlag = true;
         }
 
-        g_dwGuiNode = OspConnectTcpNode(inet_addr(NATIVE_IP),guiPort,10,3);
+        g_dwGuiNode = OspConnectTcpNode(inet_addr(NATIVE_IP),guiPort,10,3,500);
         if(INVALID_NODE == g_dwGuiNode){
                 OspLog(LOG_LVL_ERROR,"[clientInit]connect to native gui node failed\n");
                 return -1;
@@ -231,7 +231,7 @@ API void Test_Sign(){
 
 API void Connect2Server(){
 
-        g_dwdstNode = OspConnectTcpNode(inet_addr(SERVER_IP),SERVER_PORT,10,3);
+        g_dwdstNode = OspConnectTcpNode(inet_addr(SERVER_IP),SERVER_PORT,10,3,500);
         if(INVALID_NODE == g_dwdstNode){
                 OspLog(LOG_LVL_KEY, "Connect extern node failed. exit.\n");
                 return;
