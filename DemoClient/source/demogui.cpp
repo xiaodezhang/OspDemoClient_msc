@@ -92,7 +92,7 @@ fileFrame::fileFrame(QWidget*parent,u16 wfileNum,LPCSTR fileName,u16 moveFlag)
 
         m_wMoveFlag = wfileNum;
         m_wMoveStep = moveFlag;
-        strcpy((LPSTR)m_wFileName,(LPCSTR)fileName);
+        strcpy((LPSTR)m_szFileName,(LPCSTR)fileName);
         setGeometry(QRect(0,80 *(wfileNum-moveFlag), 191, 80));
         setFrameShape(QFrame::StyledPanel);
         setFrameShadow(QFrame::Plain);
@@ -121,7 +121,7 @@ fileFrame::fileFrame(QWidget*parent,u16 wfileNum,LPCSTR fileName,u16 moveFlag)
 void fileFrame::FileCancel(){
 
         if(OSP_OK != ::OspPost(MAKEIID(CLIENT_APP_ID,CInstance::DAEMON),SEND_CANCEL_CMD,
-                        m_wFileName,strlen((LPCSTR)m_wFileName)+1)){
+                        m_szFileName,strlen((LPCSTR)m_szFileName)+1)){
                OspLog(LOG_LVL_ERROR,"[FileCancel] post error\n");
                return;
         }
@@ -130,7 +130,7 @@ void fileFrame::FileCancel(){
 void fileFrame::FileGoOn(){
 
         if(OSP_OK != ::OspPost(MAKEIID(CLIENT_APP_ID,CInstance::DAEMON),FILE_GO_ON_CMD,
-                        m_wFileName,strlen((LPCSTR)m_wFileName)+1)){
+                        m_szFileName,strlen((LPCSTR)m_szFileName)+1)){
                OspLog(LOG_LVL_ERROR,"[FileGoOn] post error\n");
                return;
         }
@@ -139,7 +139,7 @@ void fileFrame::FileGoOn(){
 void fileFrame::FileRemove(){
 
         if(OSP_OK != ::OspPost(MAKEIID(CLIENT_APP_ID,CInstance::DAEMON),SEND_REMOVE_CMD,
-                        m_wFileName,strlen((LPCSTR)m_wFileName)+1)){
+                        m_szFileName,strlen((LPCSTR)m_szFileName)+1)){
                OspLog(LOG_LVL_ERROR,"[FielRemove] post error\n");
                return;
         }
@@ -231,19 +231,19 @@ void demogui::FileSizeShow(TGuiAck* tGuiAck){
         char mes[MAX_MESSAGE_LENGTH];
         s16 i;
 
-        if(tGuiAck->wGuiAck != 0){
-              sprintf(mes,"file size error:%d",tGuiAck->wGuiAck);
+        if(tGuiAck->m_swGuiAck != 0){
+              sprintf(mes,"file size error:%d",tGuiAck->m_swGuiAck);
               ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
         for(i = wFileNum-1;i >= 0;i--){
-             if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+             if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                      if(tFileFrame[i]->isHidden()){
                              continue;
                      }
 
-                     tFileFrame[i]->Pb_FileSize->setMaximum(tGuiAck->dwFileSize);
+                     tFileFrame[i]->Pb_FileSize->setMaximum(tGuiAck->m_dwFileSize);
                      tFileFrame[i]->Pb_FileSize->setMinimum(0);
                      break;
              }
@@ -258,22 +258,22 @@ void demogui::UploadFileSizeShow(TGuiAck* tGuiAck){
         char mes[MAX_MESSAGE_LENGTH];
         s16 i;
 
-        if(tGuiAck->wGuiAck != 0){
-              sprintf(mes,"file%s upload size error:%d",tGuiAck->FileName,tGuiAck->wGuiAck);
+        if(tGuiAck->m_swGuiAck != 0){
+              sprintf(mes,"file%s upload size error:%d",tGuiAck->m_szFileName,tGuiAck->m_swGuiAck);
               ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
 
         for(i = wFileNum-1;i >= 0;i--){
-                if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                         if(tFileFrame[i]->isHidden()){
                                 continue;
                         }
                         if(!tFileFrame[i]->isEnabled()){
                                 continue;
                         }
-                        tFileFrame[i]->Pb_FileSize->setValue(tGuiAck->dwUploadFileSize);
+                        tFileFrame[i]->Pb_FileSize->setValue(tGuiAck->m_dwUploadFileSize);
                         break;
                 }
         }
@@ -286,15 +286,15 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
         LPSTR p;
         s16 i;
 
-        if(tGuiAck->wGuiAck != 0){
-              sprintf(mes,"file finish error:%d",tGuiAck->wGuiAck);
+        if(tGuiAck->m_swGuiAck != 0){
+              sprintf(mes,"file finish error:%d",tGuiAck->m_swGuiAck);
               ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
 
         for(i = wFileNum-1;i >= 0;i--){
-             if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+             if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                      if(tFileFrame[i]->isHidden()){
                              continue;
                      }
@@ -306,16 +306,16 @@ void demogui::FileFinishShow(TGuiAck* tGuiAck){
         }
 
 
-        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
+        if((p = strrchr((LPSTR)tGuiAck->m_szFileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
         }else{
-                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->m_szFileName);
         }
 
         strcat((LPSTR)mes," upload finished");
         ui.TB_ACKShow->append(QString((LPCSTR(mes))));
         for(i = wFileNum-1;i >= 0;i--){
-                if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                         if(tFileFrame[i]->isHidden()){
                                 continue;
                         }
@@ -336,15 +336,15 @@ void demogui::FileCancelShow(TGuiAck* tGuiAck){
         LPSTR p;
         s16 i;
 
-        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
+        if((p = strrchr((LPSTR)tGuiAck->m_szFileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
         }else{
-                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->m_szFileName);
         }
 
-        if(tGuiAck->wGuiAck != 0){
-              if(tGuiAck->wGuiAck != -14){
-                      sprintf(mes,"file:%s cancel error:%d",mes,tGuiAck->wGuiAck);
+        if(tGuiAck->m_swGuiAck != 0){
+              if(tGuiAck->m_swGuiAck != -14){
+                      sprintf(mes,"file:%s cancel error:%d",mes,tGuiAck->m_swGuiAck);
                       ui.TB_ACKShow->append(QString((LPCSTR)mes));
                       delete tGuiAck;
                       return;
@@ -354,7 +354,7 @@ void demogui::FileCancelShow(TGuiAck* tGuiAck){
         strcat((LPSTR)mes," suspended");
         ui.TB_ACKShow->append(QString((LPCSTR(mes))));
         for(i = wFileNum-1;i >= 0;i--){
-                if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                         if(tFileFrame[i]->isHidden()){
                                 continue;
                         }
@@ -376,21 +376,21 @@ void demogui::FileRemoveShow(TGuiAck* tGuiAck){
         QPoint point; 
         s16 i,j;
 
-        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
+        if((p = strrchr((LPSTR)tGuiAck->m_szFileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
         }else{
-                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->m_szFileName);
         }
 
-        if(tGuiAck->wGuiAck != 0){
-              sprintf((LPSTR)mes,"file:%s Remove error:%d",mes,tGuiAck->wGuiAck);
+        if(tGuiAck->m_swGuiAck != 0){
+              sprintf((LPSTR)mes,"file:%s Remove error:%d",mes,tGuiAck->m_swGuiAck);
               ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
         }
 
         for(i = wFileNum-1;i >= 0;i--){
-                if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                         if(tFileFrame[i]->isHidden()){
                                 continue;
                         }
@@ -445,14 +445,14 @@ void demogui::FileGoOnShow(TGuiAck* tGuiAck){
         LPSTR p;
         s16 i;
 
-        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
+        if((p = strrchr((LPSTR)tGuiAck->m_szFileName,'\\'))){
                 strcpy((LPSTR)mes,p+1);
         }else{
-                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->FileName);
+                strcpy((LPSTR)mes,(LPCSTR)tGuiAck->m_szFileName);
         }
 
-        if(tGuiAck->wGuiAck != 0){
-              sprintf((LPSTR)mes,"file%s GoOn error:%d",mes,tGuiAck->wGuiAck);
+        if(tGuiAck->m_swGuiAck != 0){
+              sprintf((LPSTR)mes,"file%s GoOn error:%d",mes,tGuiAck->m_swGuiAck);
               ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
               return;
@@ -461,7 +461,7 @@ void demogui::FileGoOnShow(TGuiAck* tGuiAck){
         strcat((LPSTR)mes," go on uploading");
         ui.TB_ACKShow->append(QString((LPCSTR(mes))));
         for(i = wFileNum-1;i >= 0;i--){
-                if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                         if(tFileFrame[i]->isHidden()){
                                 continue;
                         }
@@ -482,17 +482,17 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
         s16 i,j;
         QPoint point; 
 
-        if((p = strrchr((LPSTR)tGuiAck->FileName,'\\'))){
+        if((p = strrchr((LPSTR)tGuiAck->m_szFileName,'\\'))){
                 strcpy((LPSTR)fileName_n,p+1);
         }else{
-                strcpy((LPSTR)fileName_n,(LPCSTR)tGuiAck->FileName);
+                strcpy((LPSTR)fileName_n,(LPCSTR)tGuiAck->m_szFileName);
         }
 
-        if(tGuiAck->wGuiAck != 0){
-              if(tGuiAck->wGuiAck == -10 || tGuiAck->wGuiAck == 4 
-                              || tGuiAck->wGuiAck == 5 || tGuiAck->wGuiAck == -12){
+        if(tGuiAck->m_swGuiAck != 0){
+              if(tGuiAck->m_swGuiAck == -10 || tGuiAck->m_swGuiAck == 4 
+                              || tGuiAck->m_swGuiAck == 5 || tGuiAck->m_swGuiAck == -12){
                      for(i = wFileNum-1;i >= 0;i--){
-                             if(strcmp((LPCSTR)tFileFrame[i]->m_wFileName,(LPCSTR)tGuiAck->FileName) == 0){
+                             if(strcmp((LPCSTR)tFileFrame[i]->m_szFileName,(LPCSTR)tGuiAck->m_szFileName) == 0){
                                      if(tFileFrame[i]->isHidden()){
                                              continue;
                                      }
@@ -512,7 +512,7 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
 
                      g_wMoveFlag++;
                      ui.verticalScrollBar->setMaximum((wFileNum-g_wMoveFlag)*80);
-                     switch(tGuiAck->wGuiAck){
+                     switch(tGuiAck->m_swGuiAck){
                              case 4:sprintf(mes,"file:%s being operated by another client\n",fileName_n);
                                     break;
                              case -10:sprintf(mes,"file:%s is finished\n",fileName_n);
@@ -523,7 +523,7 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
                                     break;
                      }
               }else{
-                            sprintf((LPSTR)mes,"file:%s upload error:%d\n",fileName_n,tGuiAck->wGuiAck);
+                            sprintf((LPSTR)mes,"file:%s upload error:%d\n",fileName_n,tGuiAck->m_swGuiAck);
               }
               ui.TB_ACKShow->append(QString((LPCSTR)mes));
               delete tGuiAck;
@@ -533,9 +533,7 @@ void demogui::FileUploadShow(TGuiAck* tGuiAck){
 
 demoCInstance::demoCInstance(QObject* parent)
     : QObject(parent)
-    ,m_wServerPort(SERVER_PORT)
 {
-        memcpy(m_byServerIp,SERVER_IP,sizeof(SERVER_IP));
         m_tCmdChain = NULL;
         m_tCmdDaemonChain = NULL;
         MsgProcessInit();
@@ -654,8 +652,8 @@ void demogui::SignIn(){
 
         TSinInfo tSinInfo;
 
-        strcpy(tSinInfo.Username,ui.LE_User->text().toLocal8Bit());
-        strcpy(tSinInfo.Passwd,ui.LE_Pwd->text().toLocal8Bit());
+        strcpy(tSinInfo.m_szUserName,ui.LE_User->text().toLocal8Bit());
+        strcpy(tSinInfo.m_szPwd,ui.LE_Pwd->text().toLocal8Bit());
 
         if(!g_bConnectedFlag){
                 g_dwdstNode = OspConnectTcpNode(inet_addr(serverSettings->GetIP())

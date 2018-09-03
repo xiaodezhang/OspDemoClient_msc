@@ -89,15 +89,15 @@
 
 
 typedef struct tagSinInfo{
-        s8 Username[AUTHORIZATION_NAME_SIZE];
-        s8 Passwd[AUTHORIZATION_NAME_SIZE];
+        s8 m_szUserName[AUTHORIZATION_NAME_SIZE];
+        s8 m_szPwd[AUTHORIZATION_NAME_SIZE];
 }TSinInfo;
 
 typedef struct tagGuiAck{
-        s16                    wGuiAck;
-        u32                    dwFileSize;
-        u32                    dwUploadFileSize;
-        u8                     FileName[MAX_FILE_NAME_LENGTH];
+        s16                    m_swGuiAck;
+        u32                    m_dwFileSize;
+        u32                    m_dwUploadFileSize;
+        s8                     m_szFileName[MAX_FILE_NAME_LENGTH];
 }TGuiAck;
 
 #if 0
@@ -122,16 +122,15 @@ public:
 private:
 
         typedef struct tagCmdNode{
-                u32         EventState;
+                u32         m_dwEventState;
                 CCInstance::MsgProcess  c_MsgProcess;
                 struct      tagCmdNode *next;
         }tCmdNode;
 
 
         u32         m_dwDisInsID;
-        u8          file_name_path[MAX_FILE_NAME_LENGTH];
+        s8          m_szFileName[MAX_FILE_NAME_LENGTH];
 
-        s8          buffer[BUFFER_SIZE];
         u32         m_dwUploadFileSize;
         u32         m_dwFileSize;      
         u8          m_byServerIp[MAX_IP_LENGTH];
@@ -154,8 +153,7 @@ public:
                      ,m_tCmdChain(NULL)
                      ,m_tCmdDaemonChain(NULL)
                      ,m_wServerPort(SERVER_PORT){
-                memset(file_name_path,0,sizeof(u8)*MAX_FILE_NAME_LENGTH);
-                memset(buffer,0,sizeof(u8)*BUFFER_SIZE);
+                memset(m_szFileName,0,sizeof(u8)*MAX_FILE_NAME_LENGTH);
                 memcpy(m_byServerIp,SERVER_IP,sizeof(SERVER_IP));
                 MsgProcessInit();
         }
@@ -217,15 +215,15 @@ public:
 class TFileList{
 public:
 
-        u8                     FileName[MAX_FILE_NAME_LENGTH];
-        u32                    FileStatus;
-        u16                    DealInstance;
-        u32                    UploadFileSize;
-        u32                    FileSize;
+        u8                     m_szFileName[MAX_FILE_NAME_LENGTH];
+        u32                    m_dwFileStatus;
+        u16                    m_wDealInstance;
+        u32                    m_dwUploadFileSize;
+        u32                    m_dwFileSize;
 
 #if 0
         inline bool operator == (const TFileList &file) const{
-                return (strcmp((LPCSTR)file.FileName,(LPCSTR)FileName) == 0);
+                return (strcmp((LPCSTR)file.m_szFileName,(LPCSTR)FileName) == 0);
         }
 #endif
 };

@@ -45,7 +45,7 @@ public:
     QProgressBar *Pb_FileSize;
     QLabel *Lb_FileName;
     QToolButton *TBtn_GoOn,*TBtn_Cancel,*TBtn_Remove;
-    unsigned char m_wFileName[MAX_FILE_NAME_LENGTH];
+    s8            m_szFileName[MAX_FILE_NAME_LENGTH];
     u16           m_wMoveFlag;
     u16           m_wMoveStep;
 public slots:
@@ -137,9 +137,6 @@ public:
 
     void MsgProcessInit();
 private:
-        u8          m_byServerIp[MAX_IP_LENGTH];
-        u16         m_wServerPort;
-private:
         void InstanceEntry(CMessage *const);
         void DaemonInstanceEntry(CMessage *const,CApp*);
 public:
@@ -176,7 +173,7 @@ signals:
        void Disconnect();
 
 private:
-        u32 dwFileSize;
+        u32 m_dwFileSize;
 private: 
         tCmdNode *m_tCmdChain;
         tCmdNode *m_tCmdDaemonChain;
