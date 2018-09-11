@@ -2,11 +2,7 @@
 #include"client.h"
 #include"demogui.h"
 #include<algorithm>
-#if _LINUX_
 #include"list.h"
-#else
-#include<list>
-#endif
 #include"jsmn.h"
 
 #define CLIENT_APP_SUM           5
@@ -50,7 +46,6 @@ static CCApp g_cCApp;
 static u16 g_wTestSingleAppId;
 
 
-#if _LINUX_
 struct list_head tFileList;   
 typedef struct tagFileList{
         struct list_head       tListHead;
@@ -60,9 +55,6 @@ typedef struct tagFileList{
         u32                    m_dwUploadFileSize;
         u32                    m_dwFileSize;
 }TFileList;
-#else
-list<TFileList*> tFileList;
-#endif
 
 typedef struct tagDemoInfo{
         u32                    srcid;
@@ -142,9 +134,7 @@ int clientInit(u32 guiPort){
         g_bConnectedFlag = false;
         g_bSignFlag      = false;
 
-#if _LINUX_
         INIT_LIST_HEAD(&tFileList);
-#endif
 
         if(OSP_OK != g_cCApp.CreateApp("OspClientApp",CLIENT_APP_ID,CLIENT_APP_PRI,MAX_MSG_WAITING)){
                 OspLog(LOG_LVL_ERROR,"[clientInit]app create error\n");
@@ -383,11 +373,7 @@ void CCInstance::FileUploadCmd(CMessage*const pMsg){
                 m_swGuiAck = -15;
                 break;
             }
-#if _LINUX_
             list_add(&tnFile->tListHead,&tFileList);
-#else
-            tFileList.push_back(tnFile);
-#endif
             strcpy((LPSTR)tnFile->m_szFileName,(LPSTR)pMsg->content);
 
         }
@@ -473,22 +459,9 @@ void CCInstance::FileUploadCmdDeal(CMessage *const pMsg){
    
         }while(0);
 
-#if _MSC_VER
-        auto iter = tFileList.begin();
-        while(iter != tFileList.end()){
-                if(strcmp((LPCSTR)(*iter)->m_szFileName,(LPCSTR)m_szFileName) == 0){
-                        tFileList.erase(iter);
-        //                delete iter;
-                        break;
-                }
-                iter++;
-        }
-
-#else
         CheckFileIn((LPCSTR)m_szFileName,&tnFile);
-        list_del(tnFile->tListHead);
+        list_del(&tnFile->tListHead);
         delete tnFile;
-#endif
         NextState(IDLE_STATE);
 
         tGuiAck.m_swGuiAck = m_swGuiAck;
@@ -620,22 +593,9 @@ void CCInstance::FileUploadAck(CMessage* const pMsg){
 
         }while(0);
 
-#if _MSC_VER
-        auto iter = tFileList.begin();
-        while(iter != tFileList.end()){
-                if(strcmp((LPCSTR)(*iter)->m_szFileName,(LPCSTR)m_szFileName) == 0){
-                        tFileList.erase(iter);
-                        //delete iter;
-                        break;
-                }
-                iter++;
-        }
-
-#else
         CheckFileIn((LPCSTR)m_szFileName,&tnFile);
-        list_del(tnFile->tListHead);
+        list_del(&tnFile->tListHead);
         delete tnFile;
-#endif
 
         NextState(IDLE_STATE);
         fclose(file);
@@ -849,7 +809,6 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
         }
 
 
-#if _LINUX_
       
         list_for_each_safe(tFileHead,templist,&tFileList){
                 tnFile = list_entry(tFileHead,TFileList,tListHead);
@@ -889,49 +848,6 @@ void CCInstance::SignOutCmd(CMessage * const pMsg){
                         pIns->file = NULL;
                 }
         }
-#else
-        list<TFileList*>::iterator iter = tFileList.begin();
-        for(;iter != tFileList.end();iter++){
-
-                pIns = (CCInstance*)((CApp*)&g_cCApp)->GetInstance((*iter)->m_wDealInstance);
-                if(!pIns){
-                        OspLog(LOG_LVL_ERROR,"[SignOutCmd]get error ins\n");
-                        continue;
-                }
-                
-                if((*iter)->m_dwFileStatus == STATUS_UPLOADING){
-                        (*iter)->m_dwFileStatus = STATUS_CANCELLED;
-                        (*iter)->m_dwUploadFileSize = pIns->m_dwUploadFileSize;
-                        (*iter)->m_dwFileSize = pIns->m_dwFileSize;
-
-                        pIns->m_curState = IDLE_STATE;
-                        if(pIns->file){
-                                if(fclose(pIns->file) == 0){
-                                        OspLog(SYS_LOG_LEVEL,"[SignOutCmd]file closed\n");
-                                }else{
-                                        OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
-                                }
-                                pIns->file = NULL;
-                        }
-                        continue;
-                }
-
-                if((*iter)->m_dwFileStatus >= STATUS_CANCELLED)
-                        continue;
-
-                (*iter)->m_dwFileStatus = STATUS_INIT;
-                pIns->m_curState = IDLE_STATE;
-                if(pIns->file){
-                        if(fclose(pIns->file) == 0){
-                                OspLog(SYS_LOG_LEVEL,"[SignOutCmd]file closed\n");
-                        }else{
-                                OspLog(LOG_LVL_ERROR,"[SignOutCmd]file close failed\n");
-                        }
-                        pIns->file = NULL;
-                }
-        }
-#endif
-
         if(OSP_OK != post(MAKEIID(SERVER_APP_ID,CInstance::DAEMON)
                                 ,SIGN_OUT,NULL,0,g_dwdstNode)){
                 OspLog(LOG_LVL_ERROR,"[SignOutCmd] post error\n");
@@ -1023,7 +939,6 @@ void CCInstance::notifyDisconnect(CMessage* const pMsg){
         g_bSignFlag = false;
 
         //TODO:断点续传
-#if _LINUX_
         list_for_each_safe(tFileHead,templist,&tFileList){
                 tnFile = list_entry(tFileHead,TFileList,tListHead);
                 list_del(&(tnFile->tListHead));
@@ -1034,16 +949,6 @@ void CCInstance::notifyDisconnect(CMessage* const pMsg){
 #endif
         }
         INIT_LIST_HEAD(&tFileList);
-#else
-        tFileList.clear();
-#if 0
-        list<TFileList*>::iterator iter = tFileList.begin();
-        while(iter != tFileList.end()){
-                iter = tFileList.erase(iter);
-                //delete iter;
-        }
-#endif
-#endif
 
         for(i = 1;i < MAX_INS_NUM;i++){
                pIns = (CCInstance*)((CApp*)&g_cCApp)->GetInstance(i);
@@ -1712,7 +1617,6 @@ void CCInstance::FileGoOnCmdDeal(CMessage* const pMsg){
 
 
 
-#if _LINUX_
 static bool CheckFileIn(LPCSTR filename,TFileList **tFile){
 
         struct list_head *tFileHead,*templist;
@@ -1735,30 +1639,6 @@ static bool CheckFileIn(LPCSTR filename,TFileList **tFile){
         }
         return inFileList;
 }
-#else
-bool CheckFileIn(LPCSTR filename,TFileList **tFile){
-
-        bool inFileList = false;
-        list<TFileList*>::iterator iter = tFileList.begin();
-
-        while(iter != tFileList.end()){
-                if(0 == strcmp((LPCSTR)((*iter)->m_szFileName),(LPCSTR)filename)){
-                        inFileList = true;
-                        break;
-                }
-                iter++;
-        }
-        if(tFile){
-                if(inFileList){
-                        *tFile = *iter;
-                }else{
-                        *tFile = NULL;
-                }
-        }
-        return inFileList;
-}
-#endif
-
 
 static CCInstance* GetPendingIns(){
 

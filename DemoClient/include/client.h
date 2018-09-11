@@ -211,24 +211,6 @@ public:
 
 };
 
-#if _MSC_VER
-class TFileList{
-public:
-
-        u8                     m_szFileName[MAX_FILE_NAME_LENGTH];
-        u32                    m_dwFileStatus;
-        u16                    m_wDealInstance;
-        u32                    m_dwUploadFileSize;
-        u32                    m_dwFileSize;
-
-#if 0
-        inline bool operator == (const TFileList &file) const{
-                return (strcmp((LPCSTR)file.m_szFileName,(LPCSTR)FileName) == 0);
-        }
-#endif
-};
-#endif
-
 #if MULTY_APP
 typedef zTemplate<CCInstance,CLIENT_INSTANCE_NUM,CAppNoData,MAX_ALIAS_LENGTH> CCApp;
 #else
