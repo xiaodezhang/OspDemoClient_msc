@@ -382,3 +382,6 @@ ASALocalRun/
 
 # Local History for Visual Studio
 .localhistory/
+GPATH
+GRTAGS
+GTAGS
